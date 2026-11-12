@@ -1,0 +1,97 @@
+/* ═══════════════════════════════════════════════════════════
+   BAYMAX — DASHBOARDS
+   Page header, stat summary cards, bar charts, schedule rows,
+   semester banner, alert cards. Used by all four portals.
+   ═══════════════════════════════════════════════════════════ */
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-md);
+}
+.section { margin-top: var(--space-lg); }
+.section-title { margin-bottom: var(--space-md); }
+.section-end { margin-bottom: var(--space-lg); }
+
+/* ── Stat cards ── */
+.stat-card .stat-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: var(--space-sm);
+}
+.stat-card .stat-value { font-family: var(--font-display); font-size: clamp(1.2rem, 2.5vw, 1.6rem); font-weight: 600; line-height: 1.2; }
+.stat-card .stat-note { margin-top: var(--space-sm); font-size: var(--fs-base); color: var(--grey-500); }
+.stat-card .stat-action { margin-top: var(--space-md); }
+
+.stat-mini { display: flex; flex-direction: column; gap: var(--space-2xs); }
+.stat-mini .stat-value { font-family: var(--font-display); font-size: var(--fs-3xl); font-weight: 700; }
+.stat-mini .stat-label { font-family: var(--font-display); font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--grey-500); }
+
+/* ── Bar chart (heights via .h-pct-N classes) ── */
+.bar-chart { display: flex; align-items: flex-end; gap: var(--space-sm); height: 180px; padding: var(--space-sm) 0; }
+.bar-chart-tall { height: 200px; }
+.bar-chart-xl { height: 280px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; height: 100%; }
+.bar {
+  position: relative;
+  width: 100%;
+  max-width: 48px;
+  background: var(--mint);
+  border: var(--border-thin);
+  border-bottom: var(--border-thick);
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  box-shadow: var(--shadow-small);
+  transition: height 0.4s ease;
+}
+.bar-peach { background: var(--peach); }
+.bar-coral { background: var(--coral); }
+.bar-lavender { background: var(--lavender); }
+.bar:hover::after {
+  content: attr(data-val);
+  position: absolute;
+  top: -24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--black);
+  color: var(--white);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: var(--fs-sm);
+  font-family: var(--font-display);
+  white-space: nowrap;
+}
+.bar-label { font-family: var(--font-display); font-size: var(--fs-sm); font-weight: 600; color: var(--grey-500); }
+
+/* ── Distribution rows (label + progress + value) ── */
+.dist-row { display: grid; grid-template-columns: 110px 1fr 56px; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.dist-value { text-align: right; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-base); }
+
+/* ── Schedule / list rows ── */
+.list-stack { display: flex; flex-direction: column; gap: var(--space-sm); }
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  background: var(--white);
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+}
+.list-row-title { font-weight: 600; font-size: 0.88rem; }
+.list-row-sub { font-size: var(--fs-md); color: var(--grey-500); }
+.time-block { text-align: center; min-width: 50px; }
+.time-block-main { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-base); }
+.time-block-sub { font-size: var(--fs-sm); color: var(--grey-500); }
+
+/* ── Semester banner & alerts ── */
+.semester-banner { display: flex; align-items: center; gap: var(--space-md); }
+.alert-card { border-left: 6px solid var(--coral); }
+.alert-card.alert-type-symptom_spike { border-left-color: var(--peach); }
+.alert-card.alert-type-department_at_risk { border-left-color: var(--lavender); }

@@ -1,0 +1,62 @@
+/* ═══════════════════════════════════════════════════════════
+   BAYMAX — ASSESSMENT (chatbot) INTERFACE
+   One question per page: progress header, question card,
+   answer options, back / next row, answered-history bubbles.
+
+   Option markup (works without JavaScript):
+   <label class="option-btn">
+     <input class="sr-only" type="radio" name="answer" value="0">
+     <strong class="option-title">0 — Not at all</strong>
+     <span class="body-sm">…</span>
+   </label>
+   ═══════════════════════════════════════════════════════════ */
+
+.chat-progress { margin-bottom: var(--space-md); }
+.chat-progress-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-sm); }
+
+.question-meta { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
+.question-text { margin-bottom: var(--space-md); }
+
+/* ── Answer options ── */
+.option-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+.option-grid-5 { grid-template-columns: repeat(2, 1fr); }
+.option-btn {
+  display: block;
+  padding: var(--space-md);
+  background: var(--white);
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-small);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  transition: transform var(--ease), box-shadow var(--ease), background var(--ease);
+}
+.option-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-medium); background: var(--mint-light); }
+.option-btn.selected,
+.option-btn:has(input:checked) { background: var(--mint); box-shadow: var(--shadow-medium); }
+.option-btn:has(input:focus-visible) { outline: 3px solid var(--mint-dark); outline-offset: 2px; }
+.option-title { display: block; margin-bottom: var(--space-2xs); }
+
+/* ── Back / next row ── */
+.chat-nav { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); }
+
+/* ── Answered-history bubbles ── */
+.chat-history { display: flex; flex-direction: column; gap: var(--space-sm); opacity: 0.6; margin-top: var(--space-lg); }
+.chat-bubble {
+  padding: var(--space-sm) var(--space-md);
+  border: var(--border-thin);
+  border-radius: var(--radius-md);
+  max-width: 80%;
+}
+.chat-bubble-bot { background: var(--white); box-shadow: var(--shadow-small); align-self: flex-start; }
+.chat-bubble-user { background: var(--mint-light); align-self: flex-end; }
+
+/* ── Completion screen ── */
+.chat-done { text-align: center; padding: var(--space-xl) var(--space-md); }
+
+@media (max-width: 640px) {
+  .option-grid, .option-grid-5 { grid-template-columns: 1fr; }
+  .chat-bubble { max-width: 100%; }
+}

@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════════════════════
+   BAYMAX — FORMS
+   Inputs, labels, selects, password toggle, checkboxes,
+   OTP field, search bar, validation states.
+   ═══════════════════════════════════════════════════════════ */
+
+.form { display: flex; flex-direction: column; gap: var(--space-md); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); }
+
+.form-label {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.form-hint { font-size: var(--fs-md); color: var(--grey-500); }
+
+/* ── Text inputs, selects, textareas ── */
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  color: var(--black);
+  background: var(--white);
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-small);
+  outline: none;
+  transition: border-color var(--ease), box-shadow var(--ease);
+}
+.input:focus { border-color: var(--mint-dark); box-shadow: var(--shadow-focus); }
+.input::placeholder { color: var(--grey-400); }
+.input:disabled, .input[readonly] { background: var(--grey-100); color: var(--grey-500); }
+textarea.input { min-height: 110px; resize: vertical; }
+
+select.input {
+  cursor: pointer;
+  appearance: none;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231A1A1A' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+/* ── Validation ── */
+.input.is-invalid { border-color: var(--coral-dark); box-shadow: 3px 3px 0px var(--coral-dark); }
+.field-error, .errorlist { font-size: var(--fs-md); font-weight: 600; color: var(--coral-dark); }
+.errorlist { list-style: none; }
+
+/* ── Password field with show/hide toggle ── */
+.pwd-wrap { position: relative; }
+.pwd-wrap .input { padding-right: 68px; }
+.pwd-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-warm);
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: all var(--ease);
+  user-select: none;
+}
+.pwd-toggle:hover { background: var(--peach); transform: translateY(-50%) scale(1.05); }
+.pwd-toggle:active { transform: translateY(-50%) scale(0.95); }
+
+/* ── Checkbox / radio rows ── */
+.check-list { display: flex; flex-direction: column; gap: var(--space-sm); }
+.check-row { display: flex; align-items: center; gap: var(--space-sm); font-size: 0.88rem; }
+.check-row label { cursor: pointer; }
+.check {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: var(--mint-dark);
+  cursor: pointer;
+}
+
+/* ── One-time-password field ── */
+.otp-input {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  padding-left: 0.5em;
+}
+
+/* ── Search / filter bars ── */
+.search-bar { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+.search-bar .input { flex: 1; min-width: 200px; }

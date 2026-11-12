@@ -1,0 +1,61 @@
+/* ═══════════════════════════════════════════════════════════
+   BAYMAX — TABLES & PAGINATION
+   ═══════════════════════════════════════════════════════════ */
+
+.table-wrap {
+  overflow-x: auto;
+  background: var(--white);
+  border: var(--border-thick);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hard);
+}
+
+table { width: 100%; border-collapse: collapse; font-size: var(--fs-base); }
+
+th {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: left;
+  padding: 12px 16px;
+  background: var(--bg-warm);
+  border-bottom: var(--border-thick);
+  white-space: nowrap;
+}
+td { padding: 12px 16px; border-bottom: var(--border-hairline); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--bg-warm); }
+
+.table-actions { display: flex; flex-wrap: wrap; gap: var(--space-xs); }
+.table-actions form { display: inline; }
+.td-right, th.td-right { text-align: right; }
+.td-nowrap { white-space: nowrap; }
+.table-empty { text-align: center; padding: var(--space-xl); color: var(--grey-400); }
+
+/* Compact table for dense admin lists */
+.table-compact th, .table-compact td { padding: 8px 12px; }
+
+/* ── Pagination ── */
+.pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-xs); margin-top: var(--space-md); }
+.page-link {
+  min-width: 36px;
+  padding: 6px 12px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--black);
+  background: var(--white);
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-small);
+  transition: transform var(--ease);
+}
+.page-link:hover { transform: translateY(-1px); }
+.page-link.active { background: var(--black); color: var(--white); }
+.page-link.disabled { opacity: 0.4; pointer-events: none; }
+.page-gap { color: var(--grey-400); padding: 0 4px; }
+.pagination-info { text-align: center; margin-top: var(--space-xs); }
