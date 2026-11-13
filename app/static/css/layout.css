@@ -218,6 +218,7 @@
   .navbar { flex-wrap: wrap; gap: var(--space-sm); padding: var(--space-sm); }
   .nav-links { width: 100%; justify-content: center; }
   .container { padding: var(--space-sm); }
+  .deco-blob { display: none; }
 }
 
 /* ═══ Dynamic size utilities ═══

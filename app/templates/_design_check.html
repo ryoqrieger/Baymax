@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}Design check — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+
+{% block content %}
+<div class="container">
+
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">🎨 Design check</h1>
+      <p class="body-sm">Temporary page — every component of the Baymax design system. Delete after approval.</p>
+    </div>
+    <div class="badge badge-critical animate-pulse">🔴 3 New Requests</div>
+  </div>
+
+  <!-- Alerts -->
+  <div class="alert-stack">
+    <div class="alert alert-success">✅ Success — your changes were saved.</div>
+    <div class="alert alert-info">ℹ️ Info — your OTP expires in 10 minutes.</div>
+    <div class="alert alert-warning">⚠️ Warning — please complete your profile.</div>
+    <div class="alert alert-error">⚠️ Error — wrong email or password.</div>
+  </div>
+
+  <!-- Hero -->
+  <section class="card card-static relative overflow-hidden bg-gradient-hero text-center p-lg">
+    <div class="deco-blob deco-blob-mint"></div>
+    <div class="deco-blob deco-blob-peach"></div>
+    <div class="relative">
+      <div class="brand-face brand-face-lg animate-float">(●—●)</div>
+      <h2 class="display-xl mx-auto mw-md">
+        Your Personal<br>
+        <span class="highlight-box">Mental Health</span><br>
+        Companion
+      </h2>
+      <p class="body-lg mx-auto mw-xs mt-md">Baymax is here to help you track, understand, and improve your wellbeing.</p>
+      <div class="flex gap-md flex-wrap justify-center mt-lg">
+        <a class="btn btn-primary" href="#">Get Started →</a>
+        <a class="btn btn-ghost btn-outlined" href="#">Preview</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Role cards -->
+  <section class="section">
+    <div class="grid-4">
+      <a class="card role-card accent-top-thick-mint" href="#"><div class="role-icon">🎓</div><div class="role-title">Student</div><p class="body-sm mt-sm">Take assessments &amp; track wellbeing</p></a>
+      <a class="card role-card accent-top-thick-lavender" href="#"><div class="role-icon">🧠</div><div class="role-title">Professional</div><p class="body-sm mt-sm">Manage appointments</p></a>
+      <a class="card role-card accent-top-thick-peach" href="#"><div class="role-icon">🏛️</div><div class="role-title">Authority</div><p class="body-sm mt-sm">Campus-wide analytics</p></a>
+      <a class="card role-card accent-top-thick-coral" href="#"><div class="role-icon">⚙️</div><div class="role-title">Admin IT</div><p class="body-sm mt-sm">Manage users &amp; semesters</p></a>
+    </div>
+  </section>
+
+  <!-- Stat cards -->
+  <section class="section">
+    <div class="grid-3">
+      <div class="card stat-card accent-top-mint">
+        <div class="stat-label">Current Status</div>
+        <div class="stat-value text-mint">Stable</div>
+        <p class="stat-note">You're managing stress well this semester.</p>
+        <a class="btn btn-sm btn-ghost btn-block stat-action" href="#">View Details →</a>
+      </div>
+      <div class="card stat-card accent-top-lavender">
+        <div class="stat-label">Appointments</div>
+        <div class="stat-value">No Pending</div>
+        <p class="stat-note">You have no active appointments.</p>
+        <a class="btn btn-sm btn-ghost btn-block stat-action" href="#">Request Help →</a>
+      </div>
+      <div class="card stat-card accent-top-peach">
+        <div class="stat-label">Upcoming Events</div>
+        <div class="stat-value">3 Events</div>
+        <p class="stat-note">Mindfulness Workshop, Yoga Session, Group Therapy</p>
+        <a class="btn btn-sm btn-ghost btn-block stat-action" href="#">View Events →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Status + insight -->
+  <section class="section">
+    <div class="grid-2 items-start-grid">
+      <div class="card status-card status-stable">
+        <div class="status-icon animate-float-fast">✅</div>
+        <div class="badge badge-stable badge-lg">Stable</div>
+        <h2 class="display-lg status-title">You're doing well!</h2>
+        <p class="body-lg status-summary">Your responses across the PSS, GAD, and PHQ scales indicate low levels of stress, anxiety, and depressive symptoms.</p>
+      </div>
+      <div class="card card-grad-lavender">
+        <div class="insight-head"><span class="fs-2xl">✨</span><span class="label">Baymax AI Insight</span></div>
+        <p class="body-lg insight-text">"Your assessment shows a healthy psychological profile this semester. Keep prioritising self-care and regular sleep."</p>
+        <div class="recommendation"><span class="body-sm fw-semibold">💡 Recommendation:</span> <span class="body-sm">Attend the Mindfulness Workshop</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Symptoms with dynamic widths -->
+  <section class="section">
+    <h2 class="display-md section-title">🔍 Top Symptoms</h2>
+    <div class="grid-3">
+      <div class="card accent-left-peach"><div class="label text-peach symptom-rank">🥇 Most Impactful</div><div class="symptom-name">Academic Pressure</div>
+        <div class="progress-track progress-thin mt-sm"><div class="progress-fill fill-peach w-pct-60"></div></div><p class="body-sm symptom-score">Score: 2 / 4</p></div>
+      <div class="card accent-left-mint"><div class="label text-mint symptom-rank">🥈 2nd</div><div class="symptom-name">Sleep Quality</div>
+        <div class="progress-track progress-thin mt-sm"><div class="progress-fill fill-mint w-pct-40"></div></div><p class="body-sm symptom-score">Score: 1 / 4</p></div>
+      <div class="card accent-left-lavender"><div class="label text-muted symptom-rank">🥉 3rd</div><div class="symptom-name">Social Connection</div>
+        <div class="progress-track progress-thin mt-sm"><div class="progress-fill fill-lavender w-pct-25"></div></div><p class="body-sm symptom-score">Score: 1 / 4</p></div>
+    </div>
+  </section>
+
+  <!-- Assessment -->
+  <section class="section">
+    <div class="container-md mx-auto">
+      <div class="chat-progress">
+        <div class="chat-progress-head"><span class="label">Question 12 of 26</span><span class="body-sm">46%</span></div>
+        <progress class="progress" value="12" max="26">46%</progress>
+      </div>
+      <div class="card card-static">
+        <div class="question-meta"><span class="badge badge-lavender">GAD-7</span><span class="body-sm">Anxiety Scale</span></div>
+        <h2 class="display-md question-text">Over the last 2 weeks, how often have you felt nervous, anxious, or on edge?</h2>
+        <div class="option-grid">
+          <label class="option-btn"><input class="sr-only" type="radio" name="demo" value="0"><strong class="option-title">0 — Not at all</strong><span class="body-sm">I haven't experienced this</span></label>
+          <label class="option-btn"><input class="sr-only" type="radio" name="demo" value="1" checked><strong class="option-title">1 — Several days</strong><span class="body-sm">A few days</span></label>
+          <label class="option-btn"><input class="sr-only" type="radio" name="demo" value="2"><strong class="option-title">2 — More than half the days</strong><span class="body-sm">Most of my week</span></label>
+          <label class="option-btn"><input class="sr-only" type="radio" name="demo" value="3"><strong class="option-title">3 — Nearly every day</strong><span class="body-sm">Constant</span></label>
+        </div>
+      </div>
+      <div class="chat-nav mt-md"><button class="btn btn-ghost" type="button">← Previous</button><button class="btn btn-accent" type="button">Next Question →</button></div>
+      <div class="chat-history">
+        <div class="chat-bubble chat-bubble-bot"><p class="body-sm"><strong>Baymax:</strong> Question 11 — How often have you had trouble relaxing?</p></div>
+        <div class="chat-bubble chat-bubble-user"><p class="body-sm"><strong>You:</strong> 1 — Several days</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Table -->
+  <section class="section">
+    <h2 class="display-md section-title">Recent Student Requests</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Student</th><th>Status</th><th>Classification</th><th>Requested</th><th>Actions</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Jamie Park</strong><br><span class="body-sm">CSE • Sem 5</span></td><td><span class="badge badge-pending badge-xs">Pending</span></td><td><span class="badge badge-critical badge-xs">Critical</span></td><td class="body-sm">2 hours ago</td>
+            <td><div class="table-actions"><button class="btn btn-xs btn-accent">Accept</button><button class="btn btn-xs btn-ghost btn-outlined">Decline</button></div></td></tr>
+          <tr><td><strong>Morgan Lee</strong><br><span class="body-sm">BBA • Sem 3</span></td><td><span class="badge badge-pending badge-xs">Pending</span></td><td><span class="badge badge-challenged badge-xs">Challenged</span></td><td class="body-sm">5 hours ago</td>
+            <td><div class="table-actions"><button class="btn btn-xs btn-accent">Accept</button><button class="btn btn-xs btn-ghost btn-outlined">Decline</button></div></td></tr>
+          <tr><td><strong>Riley Torres</strong><br><span class="body-sm">ENG • Sem 7</span></td><td><span class="badge badge-active badge-xs">Active</span></td><td><span class="badge badge-stable badge-xs">Stable</span></td><td class="body-sm">Nov 10, 2026</td>
+            <td><div class="table-actions"><button class="btn btn-xs btn-peach">Release</button></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="pagination">
+      <a class="page-link disabled" href="#">← Prev</a><a class="page-link active" href="#">1</a><a class="page-link" href="#">2</a><a class="page-link" href="#">3</a><span class="page-gap">…</span><a class="page-link" href="#">9</a><a class="page-link" href="#">Next →</a>
+    </div>
+  </section>
+
+  <!-- Bar chart + list rows -->
+  <section class="section">
+    <div class="grid-2 items-start-grid">
+      <div class="card card-static">
+        <div class="label mb-sm">Monthly Cases</div>
+        <div class="bar-chart">
+          <div class="bar-col"><div class="bar h-pct-40" data-val="8"></div><div class="bar-label">Jan</div></div>
+          <div class="bar-col"><div class="bar h-pct-60" data-val="12"></div><div class="bar-label">Feb</div></div>
+          <div class="bar-col"><div class="bar bar-peach h-pct-75" data-val="15"></div><div class="bar-label">Mar</div></div>
+          <div class="bar-col"><div class="bar bar-coral h-pct-90" data-val="18"></div><div class="bar-label">Apr</div></div>
+          <div class="bar-col"><div class="bar bar-lavender h-pct-55" data-val="11"></div><div class="bar-label">May</div></div>
+        </div>
+      </div>
+      <div class="card card-static">
+        <div class="flex justify-between items-center mb-md"><div class="label">Today's Schedule</div><span class="badge badge-stable">3 sessions</span></div>
+        <div class="list-stack">
+          <div class="list-row fill-mint-light"><div class="time-block"><div class="time-block-main">10:00</div><div class="time-block-sub">AM</div></div><div class="flex-1"><div class="list-row-title">Jamie Park</div><p class="list-row-sub">Initial consultation</p></div><span class="badge badge-critical badge-xs">Critical</span></div>
+          <div class="list-row"><div class="time-block"><div class="time-block-main">11:30</div><div class="time-block-sub">AM</div></div><div class="flex-1"><div class="list-row-title">Morgan Lee</div><p class="list-row-sub">Follow-up session</p></div><span class="badge badge-challenged badge-xs">Challenged</span></div>
+        </div>
+        <div class="dist-row mt-md"><span class="body-sm">Stable</span><div class="progress-track progress-thin"><div class="progress-fill fill-mint w-pct-46"></div></div><span class="dist-value">46%</span></div>
+        <div class="dist-row"><span class="body-sm">Critical</span><div class="progress-track progress-thin"><div class="progress-fill fill-coral w-pct-18"></div></div><span class="dist-value">18%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Forms -->
+  <section class="section">
+    <div class="card card-static mw-sm">
+      <h2 class="display-md mb-md">Forms</h2>
+      <form class="form" onsubmit="return false">
+        <div class="field-row">
+          <div class="field"><label class="form-label" for="dc-name">Full name</label><input class="input" id="dc-name" placeholder="Your name"></div>
+          <div class="field"><label class="form-label" for="dc-dept">Department</label><select class="input" id="dc-dept"><option>CSE</option><option>EEE</option><option>BBA</option></select></div>
+        </div>
+        <div class="field"><label class="form-label" for="dc-pwd">Password</label>
+          <div class="pwd-wrap"><input class="input" id="dc-pwd" type="password" value="secret123"><button class="pwd-toggle" type="button">◡—◡</button></div></div>
+        <div class="field"><label class="form-label" for="dc-bad">Email (invalid)</label><input class="input is-invalid" id="dc-bad" value="not-an-email"><span class="field-error">Enter a valid email address.</span></div>
+        <div class="field"><label class="form-label" for="dc-otp">OTP</label><input class="input otp-input" id="dc-otp" value="482910" maxlength="6"></div>
+        <div class="check-list"><div class="check-row"><input class="check" type="checkbox" id="dc-c1" checked><label for="dc-c1">Archive all assessment data</label></div><div class="check-row"><input class="check" type="checkbox" id="dc-c2"><label for="dc-c2">Notify all users via email</label></div></div>
+        <div class="divider"><span class="divider-line"></span>or<span class="divider-line"></span></div>
+        <div class="btn-row"><button class="btn btn-primary" type="button">Primary</button><button class="btn btn-accent" type="button">Accent</button><button class="btn btn-peach" type="button">Peach</button><button class="btn btn-coral" type="button">Coral</button><button class="btn btn-white" type="button">White</button><button class="btn btn-ghost" type="button">Ghost</button></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Filters, badges, FAQ, event, empty -->
+  <section class="section">
+    <div class="filter-bar mb-md"><a class="filter-chip active" href="#">All</a><a class="filter-chip" href="#">Students</a><a class="filter-chip" href="#">Professionals</a><a class="filter-chip" href="#">Authority</a></div>
+    <div class="flex gap-sm flex-wrap mb-lg"><span class="badge badge-stable">Stable</span><span class="badge badge-challenged">Challenged</span><span class="badge badge-critical">Critical</span><span class="badge badge-lavender">PHQ-9</span><span class="badge badge-muted">Archived</span><span class="chip"><span class="dot dot-mint"></span> Online</span><span class="score-pill score-0">0</span><span class="score-pill score-2">2</span><span class="score-pill score-4">4</span></div>
+
+    <div class="grid-2 items-start-grid">
+      <div class="faq-list">
+        <details class="faq-item" open><summary class="faq-q">Is my data private? <span class="faq-toggle">+</span></summary><div class="faq-a">Only you, your assigned professional and aggregated statistics can see your results.</div></details>
+        <details class="faq-item"><summary class="faq-q">How often should I take the assessment? <span class="faq-toggle">+</span></summary><div class="faq-a">Once per semester.</div></details>
+      </div>
+      <div class="event-card">
+        <div class="event-banner fill-mint">🧘</div>
+        <div class="event-body"><span class="badge badge-lavender self-start">Workshop</span><div class="display-md fs-xl">Mindfulness Workshop</div><p class="body-sm">Nov 24 • 4:00 PM • Student Center</p><div class="mt-auto pt-xs"><button class="btn btn-sm btn-accent btn-block" type="button">RSVP</button></div></div>
+      </div>
+    </div>
+
+    <div class="card card-static mt-lg"><div class="empty-state"><div class="empty-state-icon">🌱</div><p>Nothing here yet.</p></div></div>
+  </section>
+
+</div>
+{% endblock %}

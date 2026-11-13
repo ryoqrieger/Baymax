@@ -1,0 +1,79 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Baymax — Mental Health Companion{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="{% static 'css/variables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/layout.css' %}">
+  <link rel="stylesheet" href="{% static 'css/components.css' %}">
+  <link rel="stylesheet" href="{% static 'css/forms.css' %}">
+  <link rel="stylesheet" href="{% static 'css/tables.css' %}">
+  <link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
+  <link rel="stylesheet" href="{% static 'css/status.css' %}">
+  <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="page {% block page_class %}{{ role_tint }}{% endblock %}">
+
+    {% block navbar %}
+    <nav class="navbar" aria-label="Main navigation">
+      <a class="brand" href="{{ home_url }}">
+        <span class="brand-face">(●—●)</span>
+        <span>Baymax</span>
+      </a>
+
+      <div class="nav-links">
+        {% for item in nav_items %}
+          <a class="nav-link{% if item.active %} active{% endif %}" href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}</a>
+        {% endfor %}
+
+        {% if role %}
+          {% if user_name %}<span class="chip" title="{{ role_label }}">{{ user_name }}</span>{% endif %}
+          {% if logout_url %}
+          <form class="nav-form" method="post" action="{{ logout_url }}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-ghost" type="submit">Logout</button>
+          </form>
+          {% endif %}
+        {% elif login_url %}
+          <a class="btn btn-sm btn-primary" href="{{ login_url }}">Log in</a>
+        {% endif %}
+      </div>
+    </nav>
+    {% endblock navbar %}
+
+    {% if messages %}
+    <div class="container container-md">
+      <div class="alert-stack mt-md" role="status">
+        {% for message in messages %}
+          <div class="alert alert-{{ message.level_tag|default:'info' }}">
+            <span aria-hidden="true">{% if message.level_tag == 'success' %}✅{% elif message.level_tag == 'error' %}⚠️{% elif message.level_tag == 'warning' %}⚠️{% else %}ℹ️{% endif %}</span>
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <main class="page-main">
+      {% block content %}{% endblock %}
+    </main>
+
+    {% block footer %}
+    <footer class="footer">
+      © {{ current_year }} Baymax Project. Built with care for university students.
+    </footer>
+    {% endblock footer %}
+
+  </div>
+  {% block extra_body %}{% endblock %}
+</body>
+</html>
