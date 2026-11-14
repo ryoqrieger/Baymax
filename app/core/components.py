@@ -6,7 +6,9 @@ Sprint 2. Role routing and navigation live here so that views, templates
 and the navbar never hard-code them.
 """
 
-VALID_DEPARTMENTS = frozenset({'CSE', 'EEE', 'ENG', 'ECO', 'BBA'})
+# Display order for dropdowns; VALID_DEPARTMENTS is the set used for validation.
+DEPARTMENT_CHOICES = ('CSE', 'EEE', 'BBA', 'ENG', 'ECO')
+VALID_DEPARTMENTS = frozenset(DEPARTMENT_CHOICES)
 
 # Session value for each role (matches users.role in the database).
 ROLE_STUDENT = 'student'
@@ -74,3 +76,5 @@ LOGIN_MAX_ATTEMPTS = 5            # failed logins allowed ...
 LOGIN_WINDOW_SECONDS = 15 * 60    # ... within this window, then temporary lockout
 OTP_TTL_SECONDS = 10 * 60         # registration OTP is valid for 10 minutes
 OTP_RESEND_SECONDS = 5 * 60       # a new OTP can be requested every 5 minutes
+OTP_MAX_ATTEMPTS = 5              # wrong codes allowed before a new code is required
+EMAIL_SEND_TIMEOUT_SECONDS = 10   # give up on the mail server after this long

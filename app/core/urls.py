@@ -9,9 +9,13 @@ from core.views import admin, auth, authority, professional, student
 
 urlpatterns = [
     # ── Auth (all roles) ──
-    path('', auth.index, name='landing'),
+    path('', auth.landing, name='landing'),
     path('login/', auth.login_view, name='login'),
     path('logout/', auth.logout_view, name='logout'),
+    path('register/', auth.register, name='register'),
+    path('register/verify/', auth.register_verify, name='register_verify'),
+    path('register/resend/', auth.register_resend, name='register_resend'),
+    path('register/cancel/', auth.register_cancel, name='register_cancel'),
     path('account/password/', auth.change_password, name='change_password'),
 
     # ── Dashboards (placeholders until their sprint) ──

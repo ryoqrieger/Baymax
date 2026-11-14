@@ -5,23 +5,40 @@ Session keys set at login (read by core.utils.nav_context and every view):
     user_id, role, user_name, email
 """
 import functools
+import hmac
+import hashlib
+import math
+import re
+import secrets
+import time
 
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.contrib.auth.hashers import check_password, is_password_usable, make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
+from django.db import IntegrityError
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from core.components import (
     ALL_ROLES,
+    DEPARTMENT_CHOICES,
     LOGIN_MAX_ATTEMPTS,
     LOGIN_WINDOW_SECONDS,
+    OTP_MAX_ATTEMPTS,
+    OTP_RESEND_SECONDS,
+    OTP_TTL_SECONDS,
     ROLE_DASHBOARD,
+    ROLE_STUDENT,
+    VALID_DEPARTMENTS,
 )
 from core.db import connect_db
-from core.utils import safe_reverse
+from core.email_utils import EmailSendError, send_otp_email
+from core.utils import mask_email, safe_reverse
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -141,12 +158,15 @@ def redirect_to_dashboard(role):
 #  VIEWS
 # ════════════════════════════════════════════════════════════════════
 
-def index(request):
-    """Home. Replaced by the landing page in the next chunk."""
+def landing(request):
+    """Public home page. Signed-in users go straight to their dashboard."""
     role = request.session.get('role')
     if role in ROLE_DASHBOARD:
         return redirect_to_dashboard(role)
-    return redirect('login')
+    return render(request, 'auth/landing.html', {
+        'login_url': safe_reverse('login'),
+        'register_url': safe_reverse('register'),
+    })
 
 
 @rate_limit(max_attempts=LOGIN_MAX_ATTEMPTS, window=LOGIN_WINDOW_SECONDS)
@@ -257,3 +277,273 @@ def change_password(request):
         conn.close()
 
     return render(request, 'auth/change_password.html')
+
+
+# ════════════════════════════════════════════════════════════════════
+#  STUDENT REGISTRATION WITH EMAIL OTP
+#
+#  1. /register/         validate the form, email a 6-digit code, keep the
+#                        pending account in the session (password hashed,
+#                        code stored only as an HMAC)
+#  2. /register/verify/  check the code (10-minute expiry, 5 tries),
+#                        then create the account and sign the student in
+#  3. /register/resend/  new code, at most one every 5 minutes
+# ════════════════════════════════════════════════════════════════════
+
+PENDING_KEY = 'registration_pending'
+_STUDENT_ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9\-_/]{2,29}$')
+
+
+def _hash_otp(email: str, otp: str) -> str:
+    """HMAC of the code, keyed with SECRET_KEY — the plain code is never stored."""
+    return hmac.new(
+        settings.SECRET_KEY.encode(), f'{email}:{otp}'.encode(), hashlib.sha256
+    ).hexdigest()
+
+
+def _new_otp() -> str:
+    return f'{secrets.randbelow(10 ** 6):06d}'
+
+
+def _cooldown_key(email: str) -> str:
+    return f'otp_cooldown:{email}'
+
+
+def _cooldown_remaining(email: str) -> int:
+    """Seconds until another code may be sent to this address (0 = allowed now)."""
+    sent_at = cache.get(_cooldown_key(email))
+    if sent_at is None:
+        return 0
+    return max(0, math.ceil(OTP_RESEND_SECONDS - (time.time() - sent_at)))
+
+
+def _minutes(seconds: int) -> int:
+    return max(1, math.ceil(seconds / 60))
+
+
+def _issue_otp(pending: dict) -> None:
+    """Create a code, email it, and record it on `pending`. Raises EmailSendError."""
+    otp = _new_otp()
+    send_otp_email(pending['email'], pending['full_name'], otp, OTP_TTL_SECONDS // 60)
+    now = time.time()
+    pending['otp_hash'] = _hash_otp(pending['email'], otp)
+    pending['otp_expires'] = now + OTP_TTL_SECONDS
+    pending['attempts'] = 0
+    cache.set(_cooldown_key(pending['email']), now, OTP_RESEND_SECONDS)
+
+
+def _validate_registration(data: dict) -> dict:
+    """Return {field: message} for every problem found (empty dict = valid)."""
+    errors = {}
+
+    name = data['full_name']
+    if len(name) < 2 or len(name) > 120:
+        errors['full_name'] = 'Please enter your full name (2–120 characters).'
+
+    email = data['email']
+    try:
+        if len(email) > 254:
+            raise ValidationError('too long')
+        validate_email(email)
+    except ValidationError:
+        errors['email'] = 'Please enter a valid email address.'
+
+    if not _STUDENT_ID_RE.match(data['student_id']):
+        errors['student_id'] = 'Use 3–30 letters, numbers, or dashes (e.g. 2026-1-60-001).'
+
+    if data['department'] not in VALID_DEPARTMENTS:
+        errors['department'] = 'Please choose your department.'
+
+    password = data['password']
+    if password != data['confirm']:
+        errors['confirm'] = 'The passwords do not match.'
+    elif password:
+        first, _, last = name.partition(' ')
+        # Unsaved User: only used so the "too similar to your details" check has
+        # something to compare with. Nothing is written to the database.
+        probe = User(username=email.split('@')[0], first_name=first, last_name=last, email=email)
+        try:
+            validate_password(password, user=probe)
+        except ValidationError as exc:
+            errors['password'] = ' '.join(exc.messages)
+    else:
+        errors['password'] = 'Please choose a password.'
+
+    return errors
+
+
+def _find_conflicts(email: str, student_id: str) -> dict:
+    """Field errors for an email or student ID that is already registered."""
+    conflicts = {}
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT 1 FROM users WHERE LOWER(email) = LOWER(%s)", (email,))
+            if cur.fetchone():
+                conflicts['email'] = 'An account with this email already exists.'
+            cur.execute("SELECT 1 FROM students WHERE LOWER(student_id) = LOWER(%s)", (student_id,))
+            if cur.fetchone():
+                conflicts['student_id'] = 'This student ID is already registered.'
+    finally:
+        conn.close()
+    return conflicts
+
+
+def register(request):
+    role = request.session.get('role')
+    if role in ROLE_DASHBOARD:
+        return redirect_to_dashboard(role)
+
+    form = {'full_name': '', 'email': '', 'student_id': '', 'department': ''}
+    errors = {}
+
+    if request.method == 'POST':
+        data = {
+            'full_name': ' '.join(request.POST.get('full_name', '').split()),
+            'email': request.POST.get('email', '').strip().lower(),
+            'student_id': request.POST.get('student_id', '').strip(),
+            'department': request.POST.get('department', '').strip(),
+            'password': request.POST.get('password', ''),
+            'confirm': request.POST.get('confirm', ''),
+        }
+        form = {k: data[k] for k in form}
+        errors = _validate_registration(data)
+
+        if not errors:
+            errors = _find_conflicts(data['email'], data['student_id'])
+
+        if not errors:
+            wait = _cooldown_remaining(data['email'])
+            pending = request.session.get(PENDING_KEY)
+            same_pending = pending and pending['email'] == data['email']
+            if wait and not same_pending:
+                messages.error(
+                    request,
+                    f'A verification code was sent to this address recently. '
+                    f'Please check your inbox, or try again in {_minutes(wait)} minute(s).',
+                )
+            else:
+                pending = {
+                    'full_name': data['full_name'],
+                    'email': data['email'],
+                    'student_id': data['student_id'],
+                    'department': data['department'],
+                    'password_hash': make_password(data['password']),
+                }
+                if same_pending and wait:
+                    # Same person re-submitting inside the cooldown: no new email.
+                    pending.update({k: request.session[PENDING_KEY][k]
+                                    for k in ('otp_hash', 'otp_expires', 'attempts')})
+                    request.session[PENDING_KEY] = pending
+                    return redirect('register_verify')
+                try:
+                    _issue_otp(pending)
+                except EmailSendError:
+                    messages.error(
+                        request,
+                        "We couldn't send the verification email. Please check the address and try again shortly.",
+                    )
+                else:
+                    request.session[PENDING_KEY] = pending
+                    messages.info(request, f"We sent a 6-digit code to {mask_email(data['email'])}.")
+                    return redirect('register_verify')
+
+    return render(request, 'auth/register.html', {
+        'form': form,
+        'errors': errors,
+        'departments': DEPARTMENT_CHOICES,
+        'login_url': safe_reverse('login'),
+        'landing_url': safe_reverse('landing'),
+        'google_url': safe_reverse('google_start'),
+    })
+
+
+def register_verify(request):
+    pending = request.session.get(PENDING_KEY)
+    if not pending:
+        messages.info(request, 'Please fill in the registration form first.')
+        return redirect('register')
+
+    if request.method == 'POST':
+        code = ''.join(ch for ch in request.POST.get('otp', '') if ch.isdigit())
+
+        # Expiry is checked on EVERY attempt.
+        if time.time() > pending['otp_expires']:
+            messages.error(request, 'That code has expired. Please request a new one.')
+        elif pending['attempts'] >= OTP_MAX_ATTEMPTS:
+            messages.error(request, 'Too many incorrect codes. Please request a new one.')
+        else:
+            pending['attempts'] += 1
+            request.session[PENDING_KEY] = pending
+            expected = pending['otp_hash']
+            if len(code) == 6 and hmac.compare_digest(_hash_otp(pending['email'], code), expected):
+                return _complete_registration(request, pending)
+            left = OTP_MAX_ATTEMPTS - pending['attempts']
+            messages.error(
+                request,
+                'That code is not correct.' + (f' {left} attempt(s) left.' if left else ' Please request a new code.'),
+            )
+
+    wait = _cooldown_remaining(pending['email'])
+    return render(request, 'auth/register_otp.html', {
+        'masked_email': mask_email(pending['email']),
+        'ttl_minutes': OTP_TTL_SECONDS // 60,
+        'resend_wait_minutes': _minutes(wait) if wait else 0,
+    })
+
+
+def _complete_registration(request, pending):
+    """Create the user + student rows, then sign the new student in."""
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO users (role, full_name, email, password) "
+                "VALUES (%s, %s, %s, %s) RETURNING id, role, full_name, email",
+                (ROLE_STUDENT, pending['full_name'], pending['email'], pending['password_hash']),
+            )
+            user = cur.fetchone()
+            cur.execute(
+                "INSERT INTO students (user_id, student_id, department) VALUES (%s, %s, %s)",
+                (user['id'], pending['student_id'], pending['department']),
+            )
+        conn.commit()
+    except IntegrityError:
+        # Someone registered this email between the form and the code.
+        conn.rollback()
+        request.session.pop(PENDING_KEY, None)
+        messages.error(request, 'An account with this email already exists. Please sign in.')
+        return redirect('login')
+    finally:
+        conn.close()
+
+    start_session(request, user)  # flush() also discards the pending data
+    messages.success(request, f"Your email is verified. Welcome to Baymax, {user['full_name']}!")
+    return redirect_to_dashboard(ROLE_STUDENT)
+
+
+@require_POST
+def register_resend(request):
+    pending = request.session.get(PENDING_KEY)
+    if not pending:
+        return redirect('register')
+
+    wait = _cooldown_remaining(pending['email'])
+    if wait:
+        messages.error(request, f'Please wait {_minutes(wait)} minute(s) before requesting a new code.')
+        return redirect('register_verify')
+
+    try:
+        _issue_otp(pending)
+    except EmailSendError:
+        messages.error(request, "We couldn't send the email. Please try again shortly.")
+    else:
+        request.session[PENDING_KEY] = pending
+        messages.info(request, f"A new code was sent to {mask_email(pending['email'])}.")
+    return redirect('register_verify')
+
+
+def register_cancel(request):
+    """'Use a different email': drop the pending registration."""
+    request.session.pop(PENDING_KEY, None)
+    return redirect('register')

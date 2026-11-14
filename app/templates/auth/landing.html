@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Baymax — Your Personal Mental Health Companion{% endblock %}
+{% block page_class %}bg-gradient-hero{% endblock %}
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+<div class="deco-blob deco-blob-mint"></div>
+<div class="deco-blob deco-blob-peach"></div>
+
+<div class="landing-wrap">
+  <div class="brand-face brand-face-lg animate-float">(●—●)</div>
+
+  <h1 class="display-xl mx-auto mw-md">
+    Your Personal<br>
+    <span class="highlight-box">Mental Health</span><br>
+    Companion
+  </h1>
+
+  <p class="body-lg mx-auto mw-xs mt-md">
+    Baymax is here to help you track, understand, and improve your wellbeing throughout your university journey.
+  </p>
+
+  <div class="btn-row justify-center mt-lg">
+    <a class="btn btn-primary" href="{{ login_url }}">Get Started →</a>
+    {% if register_url %}<a class="btn btn-ghost btn-outlined" href="{{ register_url }}">Create student account</a>{% endif %}
+  </div>
+
+  <div class="grid-2 mx-auto mw-lg mt-xl">
+    <a class="card role-card accent-top-thick-mint" href="{{ login_url }}">
+      <div class="role-icon">🎓</div>
+      <div class="role-title">Student</div>
+      <p class="body-sm mt-sm">Take assessments &amp; track wellbeing</p>
+    </a>
+    <a class="card role-card accent-top-thick-lavender" href="{{ login_url }}">
+      <div class="role-icon">🧠</div>
+      <div class="role-title">Professional</div>
+      <p class="body-sm mt-sm">Manage appointments &amp; students</p>
+    </a>
+    <a class="card role-card accent-top-thick-peach" href="{{ login_url }}">
+      <div class="role-icon">🏛️</div>
+      <div class="role-title">Authority</div>
+      <p class="body-sm mt-sm">View campus-wide analytics</p>
+    </a>
+    <a class="card role-card accent-top-thick-coral" href="{{ login_url }}">
+      <div class="role-icon">⚙️</div>
+      <div class="role-title">Admin IT</div>
+      <p class="body-sm mt-sm">Manage users &amp; semesters</p>
+    </a>
+  </div>
+
+  <p class="body-sm text-muted mt-xl">
+    © {{ current_year }} Baymax Project. Built with care for university students.
+  </p>
+</div>
+{% endblock %}

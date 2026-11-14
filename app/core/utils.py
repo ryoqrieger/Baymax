@@ -22,6 +22,14 @@ def safe_reverse(name):
         return None
 
 
+def mask_email(email: str) -> str:
+    """'alex.johnson@gmail.com' -> 'a***@gmail.com' (for on-screen confirmation)."""
+    local, _, domain = email.partition('@')
+    if not domain:
+        return email
+    return f"{local[:1]}***@{domain}"
+
+
 def nav_context(request):
     """
     Template context processor: everything base.html needs for the navbar.

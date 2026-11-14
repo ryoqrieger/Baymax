@@ -1,0 +1,10 @@
+{% autoescape off %}Hi {{ full_name }},
+
+Welcome to Baymax. Your verification code is:
+
+    {{ otp }}
+
+It expires in {{ ttl_minutes }} minutes. If you did not try to create a Baymax account, you can ignore this email.
+
+— Baymax
+{% endautoescape %}
