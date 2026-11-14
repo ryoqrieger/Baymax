@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Sign in — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+
+  {% if landing_url %}
+  <a class="btn btn-ghost btn-sm mb-md" href="{{ landing_url }}">← Back to home</a>
+  {% endif %}
+
+  <div class="card card-static">
+    <div class="text-center mb-md">
+      <div class="brand-face brand-face-lg animate-float">(●—●)</div>
+      <h1 class="display-md">Welcome back</h1>
+      <p class="body-sm mt-sm">Sign in to your Baymax account</p>
+    </div>
+
+    {% if google_url %}
+    <a class="btn btn-white btn-block" href="{{ google_url }}">Continue with Google</a>
+    <div class="divider mt-md mb-md"><span class="divider-line"></span>or<span class="divider-line"></span></div>
+    {% endif %}
+
+    <form class="form" method="post" novalidate>
+      {% csrf_token %}
+      <div class="field">
+        <label class="form-label" for="email">Email address</label>
+        <input class="input" id="email" name="email" type="email" value="{{ email }}"
+               placeholder="you@university.edu" autocomplete="username" required autofocus>
+      </div>
+      <div class="field">
+        <label class="form-label" for="password">Password</label>
+        <div class="pwd-wrap">
+          <input class="input" id="password" name="password" type="password"
+                 placeholder="••••••••" autocomplete="current-password" required>
+          <button class="pwd-toggle" type="button" data-toggle-password="#password" aria-label="Show or hide password">◡—◡</button>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-block" type="submit">Sign In</button>
+    </form>
+
+    {% if register_url %}
+    <p class="body-sm text-center mt-md">New student? <a class="fw-semibold underline" href="{{ register_url }}">Create an account</a></p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_body %}<script src="{% static 'js/password-toggle.js' %}"></script>{% endblock %}

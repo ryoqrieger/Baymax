@@ -36,7 +36,10 @@
         {% endfor %}
 
         {% if role %}
-          {% if user_name %}<span class="chip" title="{{ role_label }}">{{ user_name }}</span>{% endif %}
+          {% if user_name %}
+            {% if password_url %}<a class="chip" href="{{ password_url }}" title="{{ role_label }} — change password">{{ user_name }}</a>
+            {% else %}<span class="chip" title="{{ role_label }}">{{ user_name }}</span>{% endif %}
+          {% endif %}
           {% if logout_url %}
           <form class="nav-form" method="post" action="{{ logout_url }}">
             {% csrf_token %}

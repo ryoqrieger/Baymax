@@ -66,3 +66,11 @@ ROLE_NAV = {
         ('Semester', 'admin_semester'),
     ],
 }
+
+ALL_ROLES = (ROLE_STUDENT, ROLE_PROFESSIONAL, ROLE_AUTHORITY, ROLE_ADMIN)
+
+# ── Authentication limits ─────────────────────────────────────────────────────
+LOGIN_MAX_ATTEMPTS = 5            # failed logins allowed ...
+LOGIN_WINDOW_SECONDS = 15 * 60    # ... within this window, then temporary lockout
+OTP_TTL_SECONDS = 10 * 60         # registration OTP is valid for 10 minutes
+OTP_RESEND_SECONDS = 5 * 60       # a new OTP can be requested every 5 minutes

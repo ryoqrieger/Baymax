@@ -14,7 +14,7 @@ from core.components import (
 )
 
 
-def _safe_reverse(name):
+def safe_reverse(name):
     """reverse() that returns None instead of raising when a URL isn't built yet."""
     try:
         return reverse(name)
@@ -36,7 +36,7 @@ def nav_context(request):
 
     nav_items = []
     for label, url_name in ROLE_NAV.get(role, []):
-        url = _safe_reverse(url_name)
+        url = safe_reverse(url_name)
         if url is None:
             continue
         nav_items.append({
@@ -45,7 +45,7 @@ def nav_context(request):
             'active': request.path == url or (url != '/' and request.path.startswith(url)),
         })
 
-    home_url = _safe_reverse(ROLE_DASHBOARD.get(role, '')) or _safe_reverse('landing') or '/'
+    home_url = safe_reverse(ROLE_DASHBOARD.get(role, '')) or safe_reverse('landing') or '/'
 
     return {
         'role': role,
@@ -54,7 +54,8 @@ def nav_context(request):
         'role_tint': ROLE_TINT.get(role, 'bg-gradient-soft'),
         'nav_items': nav_items,
         'home_url': home_url,
-        'login_url': _safe_reverse('login'),
-        'logout_url': _safe_reverse('logout'),
+        'login_url': safe_reverse('login'),
+        'logout_url': safe_reverse('logout'),
+        'password_url': safe_reverse('change_password'),
         'current_year': date.today().year,
     }
