@@ -1,6 +1,8 @@
 from django.urls import include, path
 
 urlpatterns = [
-    path('accounts/', include('allauth.urls')),  # Google OAuth handshake only
+    # Only the Google handshake routes are exposed (not allauth's own
+    # login / signup pages): /accounts/google/login/ and its callback.
+    path('accounts/', include('allauth.socialaccount.providers.google.urls')),
     path('', include('core.urls')),
 ]

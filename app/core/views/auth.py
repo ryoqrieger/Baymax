@@ -27,6 +27,8 @@ from django.views.decorators.http import require_POST
 from core.components import (
     ALL_ROLES,
     DEPARTMENT_CHOICES,
+    GOOGLE_PROFILE_KEY,
+    GOOGLE_PROFILE_TTL_SECONDS,
     LOGIN_MAX_ATTEMPTS,
     LOGIN_WINDOW_SECONDS,
     OTP_MAX_ATTEMPTS,
@@ -547,3 +549,110 @@ def register_cancel(request):
     """'Use a different email': drop the pending registration."""
     request.session.pop(PENDING_KEY, None)
     return redirect('register')
+
+
+# ════════════════════════════════════════════════════════════════════
+#  GOOGLE SIGN-IN / SIGN-UP
+#  allauth does the OAuth handshake; core.adapters stores the verified
+#  Google identity in the session and sends the browser to google_complete.
+# ════════════════════════════════════════════════════════════════════
+
+def google_start(request):
+    """Begin Google sign-in (the buttons on the login and register pages)."""
+    role = request.session.get('role')
+    if role in ROLE_DASHBOARD:
+        return redirect_to_dashboard(role)
+    return redirect('google_login')
+
+
+def _google_profile(request):
+    """The verified Google identity from the session, or None if missing/expired."""
+    profile = request.session.get(GOOGLE_PROFILE_KEY)
+    if not profile:
+        return None
+    if time.time() - profile.get('issued_at', 0) > GOOGLE_PROFILE_TTL_SECONDS:
+        request.session.pop(GOOGLE_PROFILE_KEY, None)
+        return None
+    return profile
+
+
+def google_complete(request):
+    """
+    Finish a Google sign-in.
+    Known student -> signed in. Other known role -> told to use the password
+    form. Unknown email -> asked for student ID + department, then registered.
+    """
+    profile = _google_profile(request)
+    if profile is None:
+        messages.error(request, 'Your Google sign-in expired. Please try again.')
+        return redirect('login')
+
+    user = _fetch_user_by_email(profile['email'])
+    if user:
+        request.session.pop(GOOGLE_PROFILE_KEY, None)
+        if not user['is_active']:
+            messages.error(request, 'This account has been deactivated. Please contact Admin IT.')
+            return redirect('login')
+        if user['role'] != ROLE_STUDENT:
+            messages.error(request, 'Staff accounts sign in with email and password.')
+            return redirect('login')
+        start_session(request, user)
+        messages.success(request, f"Welcome back, {user['full_name']}.")
+        return redirect_to_dashboard(user['role'])
+
+    form = {'full_name': profile['full_name'], 'student_id': '', 'department': ''}
+    errors = {}
+
+    if request.method == 'POST':
+        form = {
+            'full_name': request.POST.get('full_name', '').strip(),
+            'student_id': request.POST.get('student_id', '').strip(),
+            'department': request.POST.get('department', '').strip(),
+        }
+        if len(form['full_name']) < 2 or len(form['full_name']) > 120:
+            errors['full_name'] = 'Please enter your full name (2–120 characters).'
+        if not _STUDENT_ID_RE.match(form['student_id']):
+            errors['student_id'] = 'Use 3–30 letters, numbers, or dashes (e.g. 2026-1-60-001).'
+        if form['department'] not in VALID_DEPARTMENTS:
+            errors['department'] = 'Please choose your department.'
+        if not errors:
+            errors = _find_conflicts(profile['email'], form['student_id'])
+            errors.pop('email', None)  # handled below via IntegrityError / redirect
+        if not errors:
+            return _complete_google_registration(request, profile, form)
+
+    return render(request, 'auth/register_google.html', {
+        'email': profile['email'],
+        'form': form,
+        'errors': errors,
+        'departments': DEPARTMENT_CHOICES,
+        'login_url': safe_reverse('login'),
+    })
+
+
+def _complete_google_registration(request, profile, form):
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO users (role, full_name, email, password) "
+                "VALUES (%s, %s, %s, %s) RETURNING id, role, full_name, email",
+                # Unusable password: this account can only sign in with Google.
+                (ROLE_STUDENT, form['full_name'], profile['email'], make_password(None)),
+            )
+            user = cur.fetchone()
+            cur.execute(
+                "INSERT INTO students (user_id, student_id, department) VALUES (%s, %s, %s)",
+                (user['id'], form['student_id'], form['department']),
+            )
+        conn.commit()
+    except IntegrityError:
+        conn.rollback()
+        messages.error(request, 'That email or student ID is already registered. Please sign in.')
+        return redirect('login')
+    finally:
+        conn.close()
+
+    start_session(request, user)  # flush() also discards the Google profile
+    messages.success(request, f"Welcome to Baymax, {user['full_name']}!")
+    return redirect_to_dashboard(ROLE_STUDENT)

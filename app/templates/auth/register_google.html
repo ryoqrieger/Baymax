@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Finish sign-up — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+{% block navbar %}{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+
+  <a class="btn btn-ghost btn-sm mb-md" href="{{ login_url }}">← Back to sign in</a>
+
+  <div class="card card-static">
+    <div class="text-center mb-md">
+      <h1 class="display-md">Almost there</h1>
+      <p class="body-sm mt-sm">Your Google account is verified. Add your student details to finish.</p>
+    </div>
+
+    <form class="form" method="post" novalidate>
+      {% csrf_token %}
+
+      <div class="field">
+        <label class="form-label" for="email">Email address</label>
+        <input class="input" id="email" type="email" value="{{ email }}" readonly>
+        <span class="form-hint">Verified by Google.</span>
+      </div>
+
+      <div class="field">
+        <label class="form-label" for="full_name">Full name</label>
+        <input class="input{% if errors.full_name %} is-invalid{% endif %}" id="full_name" name="full_name" type="text"
+               value="{{ form.full_name }}" autocomplete="name" maxlength="120" required>
+        {% if errors.full_name %}<span class="field-error">{{ errors.full_name }}</span>{% endif %}
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="form-label" for="student_id">Student ID</label>
+          <input class="input{% if errors.student_id %} is-invalid{% endif %}" id="student_id" name="student_id" type="text"
+                 value="{{ form.student_id }}" placeholder="2026-1-60-001" maxlength="30" required autofocus>
+          {% if errors.student_id %}<span class="field-error">{{ errors.student_id }}</span>{% endif %}
+        </div>
+        <div class="field">
+          <label class="form-label" for="department">Department</label>
+          <select class="input{% if errors.department %} is-invalid{% endif %}" id="department" name="department" required>
+            <option value="" disabled{% if not form.department %} selected{% endif %}>Select…</option>
+            {% for dept in departments %}
+              <option value="{{ dept }}"{% if form.department == dept %} selected{% endif %}>{{ dept }}</option>
+            {% endfor %}
+          </select>
+          {% if errors.department %}<span class="field-error">{{ errors.department }}</span>{% endif %}
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-block" type="submit">Create Account →</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

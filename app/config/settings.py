@@ -166,6 +166,7 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_ADAPTER = 'core.adapters.BaymaxSocialAccountAdapter'
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'APP': {
@@ -174,7 +175,7 @@ SOCIALACCOUNT_PROVIDERS = {
             'key': '',
         },
         'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+        'AUTH_PARAMS': {'access_type': 'online', 'prompt': 'select_account'},
     }
 }
 

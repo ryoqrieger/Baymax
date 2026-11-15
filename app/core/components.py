@@ -78,3 +78,7 @@ OTP_TTL_SECONDS = 10 * 60         # registration OTP is valid for 10 minutes
 OTP_RESEND_SECONDS = 5 * 60       # a new OTP can be requested every 5 minutes
 OTP_MAX_ATTEMPTS = 5              # wrong codes allowed before a new code is required
 EMAIL_SEND_TIMEOUT_SECONDS = 10   # give up on the mail server after this long
+
+# ── Google sign-in ────────────────────────────────────────────────────────────
+GOOGLE_PROFILE_KEY = 'google_profile'       # session key holding the verified Google identity
+GOOGLE_PROFILE_TTL_SECONDS = 15 * 60        # finish the Google sign-up form within 15 minutes

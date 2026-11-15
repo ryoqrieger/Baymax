@@ -16,6 +16,8 @@ urlpatterns = [
     path('register/verify/', auth.register_verify, name='register_verify'),
     path('register/resend/', auth.register_resend, name='register_resend'),
     path('register/cancel/', auth.register_cancel, name='register_cancel'),
+    path('auth/google/', auth.google_start, name='google_start'),
+    path('auth/google/complete/', auth.google_complete, name='google_complete'),
     path('account/password/', auth.change_password, name='change_password'),
 
     # ── Dashboards (placeholders until their sprint) ──
