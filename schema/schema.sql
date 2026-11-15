@@ -1,23 +1,60 @@
-CREATE TABLE IF NOT EXISTS users (
+-- ════════════════════════════════════════════════════════════════════
+-- Baymax — database schema (complete, final)
+--
+-- ONE file builds everything. It first DROPS the ten Baymax tables, so
+-- running it gives you a clean, empty database every time.
+--   !! This deletes all Baymax data. Never run it on a live database. !!
+--
+-- Order:  1) schema.sql   2) dummy_data.sql  (demo data, optional)
+-- Django's own tables (sessions, cache, ...) are NOT touched here; they
+-- come from:  python manage.py migrate   and   python manage.py createcachetable
+-- ════════════════════════════════════════════════════════════════════
+
+DROP TABLE IF EXISTS analytics_alerts        CASCADE;
+DROP TABLE IF EXISTS event_rsvps             CASCADE;
+DROP TABLE IF EXISTS events                  CASCADE;
+DROP TABLE IF EXISTS appointments            CASCADE;
+DROP TABLE IF EXISTS questionnaire_responses CASCADE;
+DROP TABLE IF EXISTS semester_stats          CASCADE;
+DROP TABLE IF EXISTS semester_schedule       CASCADE;
+DROP TABLE IF EXISTS professionals           CASCADE;
+DROP TABLE IF EXISTS students                CASCADE;
+DROP TABLE IF EXISTS users                   CASCADE;
+
+
+-- ── Users (all four roles) ──────────────────────────────────────────
+CREATE TABLE users (
     id         SERIAL PRIMARY KEY,
     role       VARCHAR(20) NOT NULL
                    CHECK (role IN ('student','professional','authority','admin_it')),
     full_name  VARCHAR(120) NOT NULL,
     email      VARCHAR(254) UNIQUE NOT NULL,
     password   VARCHAR(256) NOT NULL,
+    is_active  BOOLEAN NOT NULL DEFAULT TRUE,      -- Admin IT can deactivate an account
     created_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS students (
+-- ── Student details ─────────────────────────────────────────────────
+CREATE TABLE students (
     id         SERIAL PRIMARY KEY,
     user_id    INT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     student_id VARCHAR(30) NOT NULL,
-    department VARCHAR(10) NOT NULL CHECK (department IN ('CSE','EEE','ENG','ECO','BBA'))
+    department VARCHAR(10) NOT NULL CHECK (department IN ('CSE','EEE','ENG','ECO','BBA')),
+    semester   SMALLINT CHECK (semester IS NULL OR semester BETWEEN 1 AND 12)
+               -- academic semester (1-12); optional, not asked at registration
 );
 
-CREATE TABLE IF NOT EXISTS semester_schedule (
+-- ── Professional details (shown on the student Help page) ───────────
+CREATE TABLE professionals (
+    id             SERIAL PRIMARY KEY,
+    user_id        INT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    specialization VARCHAR(100) NOT NULL DEFAULT 'General Counseling'
+);
+
+-- ── Semester calendar and archived statistics ───────────────────────
+CREATE TABLE semester_schedule (
     id                   SERIAL PRIMARY KEY,
-    semester             VARCHAR(20) UNIQUE NOT NULL,
+    semester             VARCHAR(20) UNIQUE NOT NULL,    -- e.g. 'Fall 2026'
     start_date           DATE NOT NULL,
     end_date             DATE NOT NULL,
     is_current           BOOLEAN DEFAULT FALSE,
@@ -25,7 +62,7 @@ CREATE TABLE IF NOT EXISTS semester_schedule (
     notification_pending BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS semester_stats (
+CREATE TABLE semester_stats (
     id          SERIAL PRIMARY KEY,
     semester    VARCHAR(20) UNIQUE NOT NULL,
     total       INT DEFAULT 0,
@@ -37,7 +74,8 @@ CREATE TABLE IF NOT EXISTS semester_stats (
     compiled_at TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS questionnaire_responses (
+-- ── The 26-question questionnaire (PSS-10, GAD-7, PHQ-9) ────────────
+CREATE TABLE questionnaire_responses (
     id              SERIAL PRIMARY KEY,
     student_id      INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     semester        VARCHAR(20) NOT NULL,
@@ -55,17 +93,20 @@ CREATE TABLE IF NOT EXISTS questionnaire_responses (
     UNIQUE (student_id, semester)
 );
 
-CREATE TABLE IF NOT EXISTS appointments (
+-- ── Appointment requests ────────────────────────────────────────────
+CREATE TABLE appointments (
     id              SERIAL PRIMARY KEY,
     student_id      INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     professional_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     status          VARCHAR(20) DEFAULT 'pending'
                         CHECK (status IN ('pending','accepted','declined','completed')),
     scheduled_at    TIMESTAMP,
+    is_new          BOOLEAN NOT NULL DEFAULT TRUE,   -- TRUE until the professional opens it
     created_at      TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS events (
+-- ── Events and RSVPs ────────────────────────────────────────────────
+CREATE TABLE events (
     id          SERIAL PRIMARY KEY,
     title       VARCHAR(200) NOT NULL,
     date        DATE NOT NULL,
@@ -77,7 +118,7 @@ CREATE TABLE IF NOT EXISTS events (
     created_at  TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS event_rsvps (
+CREATE TABLE event_rsvps (
     id         SERIAL PRIMARY KEY,
     student_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     event_id   INT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -85,7 +126,8 @@ CREATE TABLE IF NOT EXISTS event_rsvps (
     UNIQUE (student_id, event_id)
 );
 
-CREATE TABLE IF NOT EXISTS analytics_alerts (
+-- ── Authority alerts ────────────────────────────────────────────────
+CREATE TABLE analytics_alerts (
     id         SERIAL PRIMARY KEY,
     alert_type VARCHAR(30) NOT NULL
                    CHECK (alert_type IN ('critical_surge','symptom_spike','department_at_risk')),
@@ -95,3 +137,10 @@ CREATE TABLE IF NOT EXISTS analytics_alerts (
     dismissed  BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- ── Indexes for the queries the portals run most ────────────────────
+CREATE INDEX idx_responses_semester     ON questionnaire_responses (semester);
+CREATE INDEX idx_appointments_prof_stat ON appointments (professional_id, status);
+CREATE INDEX idx_appointments_student   ON appointments (student_id);
+CREATE INDEX idx_events_date            ON events (date);
+CREATE INDEX idx_alerts_semester        ON analytics_alerts (semester);

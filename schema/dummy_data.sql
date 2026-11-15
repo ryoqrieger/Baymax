@@ -1,30 +1,33 @@
-TRUNCATE TABLE event_rsvps             RESTART IDENTITY CASCADE;
-TRUNCATE TABLE appointments            RESTART IDENTITY CASCADE;
-TRUNCATE TABLE events                  RESTART IDENTITY CASCADE;
-TRUNCATE TABLE questionnaire_responses RESTART IDENTITY CASCADE;
-TRUNCATE TABLE students                RESTART IDENTITY CASCADE;
-TRUNCATE TABLE semester_schedule       RESTART IDENTITY CASCADE;
-TRUNCATE TABLE semester_stats          RESTART IDENTITY CASCADE;
-TRUNCATE TABLE users                   RESTART IDENTITY CASCADE;
+-- ════════════════════════════════════════════════════════════════════
+-- Baymax — DEMO DATA   (development / demo databases ONLY)
+-- Run AFTER schema.sql. Never run on a database with real student data.
+--
+--   80 users:  10 admin_it, 10 authority, 10 professional, 50 student
+--   Staff password   : Admin123!        (all admin_it, authority, professional)
+--   Student password : Student123!      (all students)
+--
+-- Dates are relative to the day you run this file (events, appointments,
+-- current semester), so the demo is never "in the past".
+-- Questionnaire answers are synthetic; each final_status was produced by
+-- the real SVM model (svm.pkl + scaler.pkl), not typed by hand.
+-- Fall 2026 is the current semester: 30 of 50 students have answered,
+-- the other 20 can take the questionnaire to try the chatbot.
+-- ════════════════════════════════════════════════════════════════════
 
-INSERT INTO semester_schedule
-    (semester, start_date, end_date, is_current, stats_compiled, notification_pending)
-VALUES
-    ('Summer 2025', '2025-05-01', '2025-08-31', FALSE, TRUE,  FALSE),
-    ('Fall 2025',   '2025-09-01', '2025-12-31', FALSE, TRUE,  FALSE),
-    ('Spring 2026', '2026-01-01', '2026-04-30', TRUE,  FALSE, FALSE),
-    ('Summer 2026', '2026-05-01', '2026-08-31', FALSE, FALSE, FALSE),
-    ('Fall 2026',   '2026-09-01', '2026-12-31', FALSE, FALSE, FALSE),
-    ('Spring 2027', '2027-01-01', '2027-04-30', FALSE, FALSE, FALSE),
-    ('Summer 2027', '2027-05-01', '2027-08-31', FALSE, FALSE, FALSE),
-    ('Fall 2027',   '2027-09-01', '2027-12-31', FALSE, FALSE, FALSE);
+-- ── Semester calendar ───────────────────────────────────────────────
+INSERT INTO semester_schedule (semester, start_date, end_date) VALUES
+    ('Summer 2025', '2025-05-01', '2025-08-31'),
+    ('Fall 2025',   '2025-09-01', '2025-12-31'),
+    ('Spring 2026', '2026-01-01', '2026-04-30'),
+    ('Summer 2026', '2026-05-01', '2026-08-31'),
+    ('Fall 2026',   '2026-09-01', '2026-12-31'),
+    ('Spring 2027', '2027-01-01', '2027-04-30'),
+    ('Summer 2027', '2027-05-01', '2027-08-31'),
+    ('Fall 2027',   '2027-09-01', '2027-12-31');
 
-INSERT INTO semester_stats
-    (semester, total, stable, challenged, critical, at_risk_pct, llm_summary, compiled_at)
-VALUES
-    ('Summer 2025', 30, 14, 12, 4,  53.33,NULL, '2025-09-01 00:01:00'),
-    ('Fall 2025',   40, 10, 18, 12, 75.00,NULL, '2026-01-01 00:01:00');
+UPDATE semester_schedule SET is_current = (CURRENT_DATE BETWEEN start_date AND end_date);
 
+-- ── Users ───────────────────────────────────────
 INSERT INTO users (role, full_name, email, password) VALUES
     ('admin_it', 'Rafiq Ahmed',    'rafiq.ahmed@baymax.edu',    'pbkdf2_sha256$1200000$hbKnUkdIRXYgPCToLGT3Jg$8A5c8vO43lJBjf3qd5Tan7vZi5mPNdQC7sPJDO71lH0='),
     ('admin_it', 'Nasrin Sultana', 'nasrin.sultana@baymax.edu', 'pbkdf2_sha256$1200000$hbKnUkdIRXYgPCToLGT3Jg$8A5c8vO43lJBjf3qd5Tan7vZi5mPNdQC7sPJDO71lH0='),
@@ -107,118 +110,321 @@ INSERT INTO users (role, full_name, email, password) VALUES
     ('student', 'Taslima Khatun',    'taslima.khatun@student.baymax.edu',    'pbkdf2_sha256$1200000$loFgDjkrr6JXyVx5643MbL$a5mevsS4lyOb6mMcvk2uZY0l/yJWcv1xh7OUbaHTKRo='),
     ('student', 'Mizanur Hoque',     'mizanur.hoque@student.baymax.edu',     'pbkdf2_sha256$1200000$loFgDjkrr6JXyVx5643MbL$a5mevsS4lyOb6mMcvk2uZY0l/yJWcv1xh7OUbaHTKRo=');
 
-INSERT INTO students (user_id, student_id, department) VALUES
-    (31, '2021-1-60-001', 'CSE'), (32, '2021-1-60-002', 'CSE'),
-    (33, '2022-1-60-003', 'CSE'), (34, '2022-1-60-004', 'CSE'),
-    (35, '2020-1-60-005', 'CSE'), (36, '2023-1-60-006', 'CSE'),
-    (37, '2023-1-60-007', 'CSE'), (38, '2021-1-60-008', 'CSE'),
-    (39, '2022-1-60-009', 'CSE'), (40, '2020-1-60-010', 'CSE'),
-    (41, '2021-1-40-001', 'EEE'), (42, '2022-1-40-002', 'EEE'),
-    (43, '2021-1-40-003', 'EEE'), (44, '2023-1-40-004', 'EEE'),
-    (45, '2020-1-40-005', 'EEE'), (46, '2022-1-40-006', 'EEE'),
-    (47, '2023-1-40-007', 'EEE'), (48, '2021-1-40-008', 'EEE'),
-    (49, '2021-2-10-001', 'BBA'), (50, '2022-2-10-002', 'BBA'),
-    (51, '2021-2-10-003', 'BBA'), (52, '2020-2-10-004', 'BBA'),
-    (53, '2023-2-10-005', 'BBA'), (54, '2022-2-10-006', 'BBA'),
-    (55, '2021-2-10-007', 'BBA'), (56, '2023-2-10-008', 'BBA'),
-    (57, '2022-3-20-001', 'ENG'), (58, '2021-3-20-002', 'ENG'),
-    (59, '2023-3-20-003', 'ENG'), (60, '2020-3-20-004', 'ENG'),
-    (61, '2022-3-20-005', 'ENG'), (62, '2021-3-20-006', 'ENG'),
-    (63, '2023-3-20-007', 'ENG'), (64, '2022-4-30-001', 'ECO'),
-    (65, '2021-4-30-002', 'ECO'), (66, '2023-4-30-003', 'ECO'),
-    (67, '2022-4-30-004', 'ECO'), (68, '2020-4-30-005', 'ECO'),
-    (69, '2021-5-50-001', 'ECO'), (70, '2022-5-50-002', 'ECO'),
-    (71, '2023-5-50-003', 'CSE'), (72, '2021-5-50-004', 'CSE'),
-    (73, '2022-6-70-001', 'BBA'), (74, '2021-6-70-002', 'ENG'),
-    (75, '2023-6-70-003', 'ENG'), (76, '2022-7-80-001', 'EEE'),
-    (77, '2021-7-80-002', 'EEE'), (78, '2020-7-80-003', 'EEE'),
-    (79, '2022-8-90-001', 'BBA'), (80, '2021-8-90-002', 'BBA');
+-- ── Students ────────────────────────────────────────────────────────
+INSERT INTO students (user_id, student_id, department, semester) VALUES
+    (31,'2021-1-60-001','CSE',4),
+    (32,'2021-1-60-002','CSE',1),
+    (33,'2022-1-60-003','CSE',6),
+    (34,'2022-1-60-004','CSE',3),
+    (35,'2020-1-60-005','CSE',8),
+    (36,'2023-1-60-006','CSE',5),
+    (37,'2023-1-60-007','CSE',2),
+    (38,'2021-1-60-008','CSE',7),
+    (39,'2022-1-60-009','CSE',4),
+    (40,'2020-1-60-010','CSE',1),
+    (41,'2021-1-40-001','EEE',6),
+    (42,'2022-1-40-002','EEE',3),
+    (43,'2021-1-40-003','EEE',8),
+    (44,'2023-1-40-004','EEE',5),
+    (45,'2020-1-40-005','EEE',2),
+    (46,'2022-1-40-006','EEE',7),
+    (47,'2023-1-40-007','EEE',4),
+    (48,'2021-1-40-008','EEE',1),
+    (49,'2021-2-10-001','BBA',6),
+    (50,'2022-2-10-002','BBA',3),
+    (51,'2021-2-10-003','BBA',8),
+    (52,'2020-2-10-004','BBA',5),
+    (53,'2023-2-10-005','BBA',2),
+    (54,'2022-2-10-006','BBA',7),
+    (55,'2021-2-10-007','BBA',4),
+    (56,'2023-2-10-008','BBA',1),
+    (57,'2022-3-20-001','ENG',6),
+    (58,'2021-3-20-002','ENG',3),
+    (59,'2023-3-20-003','ENG',8),
+    (60,'2020-3-20-004','ENG',5),
+    (61,'2022-3-20-005','ENG',2),
+    (62,'2021-3-20-006','ENG',7),
+    (63,'2023-3-20-007','ENG',4),
+    (64,'2022-4-30-001','ECO',1),
+    (65,'2021-4-30-002','ECO',6),
+    (66,'2023-4-30-003','ECO',3),
+    (67,'2022-4-30-004','ECO',8),
+    (68,'2020-4-30-005','ECO',5),
+    (69,'2021-5-50-001','ECO',2),
+    (70,'2022-5-50-002','ECO',7),
+    (71,'2023-5-50-003','CSE',4),
+    (72,'2021-5-50-004','CSE',1),
+    (73,'2022-6-70-001','BBA',6),
+    (74,'2021-6-70-002','ENG',3),
+    (75,'2023-6-70-003','ENG',8),
+    (76,'2022-7-80-001','EEE',5),
+    (77,'2021-7-80-002','EEE',2),
+    (78,'2020-7-80-003','EEE',7),
+    (79,'2022-8-90-001','BBA',4),
+    (80,'2021-8-90-002','BBA',1);
 
+-- ── Professionals ───────────────────────────────────────────────────
+INSERT INTO professionals (user_id, specialization) VALUES
+    (21,'Clinical Psychology'),
+    (22,'Counseling Psychology'),
+    (23,'Anxiety & Stress'),
+    (24,'Depression & Mood'),
+    (25,'Academic Counseling'),
+    (26,'Psychiatry'),
+    (27,'Cognitive Behavioural Therapy'),
+    (28,'Student Wellbeing'),
+    (29,'Trauma & Resilience'),
+    (30,'General Counseling');
+
+-- ── Questionnaire responses (Fall 2025 → Fall 2026) ─────────────────
 INSERT INTO questionnaire_responses
-    (student_id,semester,pss1,pss2,pss3,pss4,pss5,pss6,pss7,pss8,pss9,pss10,
-     gad1,gad2,gad3,gad4,gad5,gad6,gad7,phq1,phq2,phq3,phq4,phq5,phq6,phq7,phq8,phq9,
-     final_status, status_description)
+    (student_id, semester, pss1, pss2, pss3, pss4, pss5, pss6, pss7, pss8, pss9, pss10, gad1, gad2, gad3, gad4, gad5, gad6, gad7, phq1, phq2, phq3, phq4, phq5, phq6, phq7, phq8, phq9, final_status, status_description, submitted_at)
 VALUES
-(31,'Spring 2026',1,0,1,0,3,3,3,2,1,0,1,0,1,0,0,0,0,0,0,1,1,0,0,0,0,0,'Stable',NULL),
-(32,'Spring 2026',0,1,1,0,4,4,3,3,0,1,0,0,0,1,0,0,0,0,0,0,1,0,0,0,0,0,'Stable',NULL),
-(33,'Spring 2026',1,1,1,1,3,3,3,3,1,1,1,1,0,0,1,0,0,1,0,0,0,1,0,0,0,0,'Stable',NULL),
-(35,'Spring 2026',0,0,1,0,4,3,4,3,0,0,0,0,1,0,0,0,0,0,0,1,0,0,0,1,0,0,'Stable',NULL),
-(37,'Spring 2026',1,0,0,1,3,4,3,4,0,1,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,'Stable',NULL),
-(41,'Spring 2026',1,1,0,0,4,3,3,3,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,'Stable',NULL),
-(43,'Spring 2026',0,1,1,0,4,4,4,3,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,'Stable',NULL),
-(49,'Spring 2026',1,0,1,1,3,3,4,3,0,1,0,0,1,1,0,0,0,1,0,0,1,0,0,0,0,0,'Stable',NULL),
-(57,'Spring 2026',0,0,0,0,4,4,3,4,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,'Stable',NULL),
-(69,'Spring 2026',1,0,1,0,3,4,3,4,1,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,'Stable',NULL),
-(34,'Spring 2026',2,2,3,2,2,1,2,1,2,3,2,1,2,1,2,1,1,1,1,2,2,1,1,1,1,0,'Challenged',NULL),
-(36,'Spring 2026',3,2,2,2,1,2,1,2,2,2,1,2,1,2,1,1,1,2,1,1,2,1,1,1,1,0,'Challenged',NULL),
-(38,'Spring 2026',2,3,2,3,2,1,2,2,2,2,2,2,1,1,2,1,0,1,2,2,1,1,1,2,1,0,'Challenged',NULL),
-(39,'Spring 2026',2,2,2,2,2,1,1,2,3,2,1,1,2,2,1,1,2,2,1,1,2,2,1,1,1,0,'Challenged',NULL),
-(40,'Spring 2026',3,3,3,2,1,2,2,1,2,3,2,1,2,1,2,0,1,1,2,1,2,1,1,1,2,0,'Challenged',NULL),
-(42,'Spring 2026',2,2,3,2,2,2,2,2,2,2,2,2,1,2,1,1,1,1,1,2,2,1,1,1,1,0,'Challenged',NULL),
-(44,'Spring 2026',2,3,2,2,1,2,2,1,3,2,2,1,2,2,1,1,1,2,2,1,1,2,1,1,0,0,'Challenged',NULL),
-(45,'Spring 2026',3,2,3,2,2,1,2,2,2,3,1,2,2,1,2,1,1,1,1,2,2,1,1,2,1,0,'Challenged',NULL),
-(46,'Spring 2026',2,2,2,3,2,2,2,1,2,2,2,2,1,1,2,2,1,2,1,1,1,2,2,1,1,0,'Challenged',NULL),
-(47,'Spring 2026',3,2,3,3,1,1,2,2,2,2,2,2,2,1,1,1,1,1,2,2,2,1,1,1,0,0,'Challenged',NULL),
-(50,'Spring 2026',2,3,3,2,2,2,1,2,2,3,2,1,2,2,2,1,1,2,2,1,2,1,2,1,1,0,'Challenged',NULL),
-(51,'Spring 2026',3,2,2,3,1,2,2,1,3,2,1,2,2,2,1,1,1,1,1,2,2,2,1,1,1,0,'Challenged',NULL),
-(53,'Spring 2026',2,2,3,2,2,1,2,2,2,2,2,1,2,1,2,1,1,2,1,2,1,1,1,2,2,0,'Challenged',NULL),
-(55,'Spring 2026',2,3,2,2,2,2,2,1,2,3,1,2,1,2,2,1,1,2,1,1,2,1,2,1,0,0,'Challenged',NULL),
-(58,'Spring 2026',3,2,3,2,2,1,2,2,2,2,2,2,1,2,1,1,1,1,1,2,2,2,1,1,1,0,'Challenged',NULL),
-(59,'Spring 2026',2,2,2,3,2,1,1,2,3,2,2,1,2,1,2,2,1,2,2,1,1,2,1,2,1,0,'Challenged',NULL),
-(64,'Spring 2026',3,3,2,2,1,2,2,2,2,2,2,2,1,1,2,1,1,1,1,2,2,1,1,1,1,0,'Challenged',NULL),
-(70,'Spring 2026',2,2,3,2,2,2,1,2,2,3,1,2,2,1,2,1,1,2,1,1,1,2,2,1,0,0,'Challenged',NULL),
-(77,'Spring 2026',3,2,2,3,2,1,2,2,2,2,2,1,2,2,1,1,1,1,2,2,1,1,2,1,1,0,'Challenged',NULL),
-(79,'Spring 2026',2,3,3,2,1,2,2,2,3,2,2,2,1,2,2,1,1,2,2,1,2,1,1,2,1,0,'Challenged',NULL),
-(48,'Spring 2026',4,3,4,4,0,1,1,0,3,4,3,3,2,3,3,2,2,3,3,3,3,2,3,3,2,1,'Critical',NULL),
-(52,'Spring 2026',4,4,3,4,0,0,1,1,4,3,3,3,3,2,3,2,3,2,3,3,3,2,2,3,2,1,'Critical',NULL),
-(54,'Spring 2026',3,4,4,3,1,0,1,0,4,4,3,2,3,3,2,3,2,3,2,3,3,3,2,3,2,1,'Critical',NULL),
-(56,'Spring 2026',4,3,4,4,0,1,0,1,3,4,2,3,3,3,3,2,3,3,3,2,3,2,3,2,2,2,'Critical',NULL),
-(60,'Spring 2026',3,4,3,4,1,0,1,1,4,3,3,3,2,3,3,3,2,2,3,3,2,3,3,3,2,1,'Critical',NULL),
-(61,'Spring 2026',4,4,4,3,0,0,1,0,3,4,3,2,3,3,2,2,3,3,3,3,3,2,2,3,3,1,'Critical',NULL),
-(65,'Spring 2026',3,3,4,4,1,1,0,0,4,3,3,3,3,2,3,2,2,3,2,2,3,3,3,2,2,1,'Critical',NULL),
-(71,'Spring 2026',4,3,3,4,0,1,1,0,4,4,2,3,3,3,3,3,2,3,3,3,2,2,3,3,2,2,'Critical',NULL),
-(76,'Spring 2026',4,4,4,3,0,0,0,1,3,4,3,3,2,3,2,3,3,2,3,3,3,3,2,3,3,1,'Critical',NULL),
-(80,'Spring 2026',3,4,4,4,1,0,0,0,4,3,3,2,3,3,3,2,3,3,3,2,3,2,3,3,2,2,'Critical',NULL),
-(73,'Spring 2026',4,3,3,4,0,1,1,0,3,4,3,2,3,2,3,2,2,3,3,2,3,2,2,3,2,1,'Critical',NULL);
+    (31,'Fall 2025',1,0,1,1,4,3,4,4,0,0,1,1,0,0,0,1,0,0,0,0,0,0,0,0,1,1,'Stable',NULL,'2025-10-22 09:03:00'),
+    (32,'Fall 2025',1,0,0,1,4,4,4,3,0,1,1,0,1,0,0,0,0,0,0,0,0,1,2,0,0,0,'Stable',NULL,'2025-11-26 21:41:00'),
+    (33,'Fall 2025',3,1,2,1,1,2,2,1,2,2,1,2,1,1,1,1,2,2,2,2,2,1,2,1,2,1,'Challenged',NULL,'2025-11-23 19:39:00'),
+    (34,'Fall 2025',1,2,2,2,2,2,2,1,1,1,2,1,2,1,1,1,1,1,1,1,1,1,0,1,1,1,'Challenged',NULL,'2025-10-12 15:15:00'),
+    (35,'Fall 2025',0,2,2,2,2,3,3,3,2,0,3,1,1,1,1,1,1,2,0,1,1,1,1,1,1,1,'Challenged',NULL,'2025-11-12 15:01:00'),
+    (36,'Fall 2025',4,4,2,3,1,2,2,2,2,4,3,3,3,2,2,2,3,3,3,3,2,3,2,3,2,2,'Critical',NULL,'2025-10-07 20:17:00'),
+    (37,'Fall 2025',1,2,1,2,4,2,3,3,1,0,1,1,1,0,1,0,1,1,1,2,1,1,1,1,1,1,'Challenged',NULL,'2025-11-22 09:53:00'),
+    (38,'Fall 2025',2,1,1,1,1,3,1,2,2,2,1,2,2,1,2,1,1,2,1,1,2,1,2,1,2,2,'Challenged',NULL,'2025-10-16 10:23:00'),
+    (39,'Fall 2025',2,1,2,2,3,2,3,3,1,1,1,1,1,2,1,1,1,2,0,1,1,1,2,1,1,1,'Challenged',NULL,'2025-10-04 20:43:00'),
+    (40,'Fall 2025',3,1,2,1,3,2,3,3,2,1,2,1,2,1,1,2,1,2,1,1,1,1,1,1,1,0,'Challenged',NULL,'2025-10-27 09:40:00'),
+    (42,'Fall 2025',0,0,0,0,4,4,4,3,0,0,1,0,0,0,1,0,0,0,1,1,0,1,0,1,0,0,'Stable',NULL,'2025-10-24 14:15:00'),
+    (43,'Fall 2025',1,3,1,2,3,2,4,3,2,1,2,1,2,2,2,1,2,1,1,2,1,2,1,1,1,2,'Challenged',NULL,'2025-10-20 15:14:00'),
+    (44,'Fall 2025',1,2,2,2,3,2,3,2,2,2,1,1,1,1,0,1,1,1,1,1,1,2,1,1,1,1,'Challenged',NULL,'2025-10-04 11:48:00'),
+    (45,'Fall 2025',4,3,4,4,1,0,0,1,4,3,1,3,2,2,3,2,3,3,2,2,3,3,2,2,3,2,'Critical',NULL,'2025-11-09 10:40:00'),
+    (46,'Fall 2025',2,1,2,1,3,2,2,2,2,1,1,1,1,1,2,1,1,1,2,1,1,2,1,1,1,2,'Challenged',NULL,'2025-10-16 13:17:00'),
+    (47,'Fall 2025',1,1,1,1,3,3,3,3,0,1,0,0,1,1,1,0,1,1,0,1,1,0,1,1,2,2,'Challenged',NULL,'2025-10-13 21:07:00'),
+    (48,'Fall 2025',3,3,3,4,1,0,1,1,4,3,2,2,3,3,3,3,2,3,3,3,3,3,3,3,2,2,'Critical',NULL,'2025-11-03 16:27:00'),
+    (50,'Fall 2025',0,0,1,1,4,4,4,3,0,0,0,0,1,1,0,1,0,0,1,0,1,0,1,0,0,0,'Challenged',NULL,'2025-10-25 21:45:00'),
+    (51,'Fall 2025',4,4,3,3,0,0,0,0,4,4,2,3,2,3,3,3,2,3,2,3,3,3,3,3,3,3,'Critical',NULL,'2025-11-01 20:44:00'),
+    (52,'Fall 2025',3,3,3,4,1,1,2,0,4,4,3,2,3,2,2,2,2,3,2,2,1,3,2,2,2,2,'Critical',NULL,'2025-10-10 17:40:00'),
+    (53,'Fall 2025',0,0,0,0,4,4,4,3,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,'Stable',NULL,'2025-11-10 13:37:00'),
+    (56,'Fall 2025',3,3,3,3,0,0,0,1,4,4,2,2,2,3,2,2,3,2,2,2,2,3,3,3,3,2,'Critical',NULL,'2025-11-02 14:58:00'),
+    (57,'Fall 2025',1,1,1,2,3,3,2,2,1,1,1,2,1,2,2,1,1,2,1,2,2,1,1,1,1,1,'Challenged',NULL,'2025-10-02 16:05:00'),
+    (58,'Fall 2025',0,1,1,0,3,4,4,3,0,1,0,0,1,0,0,1,1,0,0,0,0,0,0,0,0,0,'Stable',NULL,'2025-10-18 18:31:00'),
+    (60,'Fall 2025',4,4,4,4,1,0,1,0,4,4,3,3,3,3,2,2,2,2,2,3,3,3,3,3,3,3,'Critical',NULL,'2025-10-26 10:09:00'),
+    (61,'Fall 2025',3,1,2,2,2,2,2,2,1,2,3,3,2,1,2,2,1,1,2,2,2,2,2,0,1,2,'Challenged',NULL,'2025-11-12 12:12:00'),
+    (63,'Fall 2025',1,0,1,1,2,2,4,4,1,2,1,0,0,1,0,1,0,0,0,2,1,0,1,0,1,1,'Challenged',NULL,'2025-11-21 20:04:00'),
+    (66,'Fall 2025',0,0,0,1,4,4,3,4,0,0,0,0,0,1,0,1,0,0,0,1,0,0,0,0,0,0,'Stable',NULL,'2025-10-22 17:42:00'),
+    (67,'Fall 2025',1,3,1,2,3,2,3,1,2,2,1,2,1,2,1,1,1,3,2,1,1,2,1,2,1,1,'Challenged',NULL,'2025-10-14 13:23:00'),
+    (68,'Fall 2025',1,1,0,0,3,4,3,3,0,0,0,1,0,0,1,0,0,0,0,0,0,0,1,0,1,0,'Stable',NULL,'2025-11-20 20:19:00'),
+    (69,'Fall 2025',1,0,1,0,3,4,3,3,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,1,0,0,'Stable',NULL,'2025-10-13 13:34:00'),
+    (70,'Fall 2025',0,0,0,0,4,4,4,4,1,0,0,0,0,1,1,0,1,1,0,0,0,1,0,0,0,0,'Stable',NULL,'2025-10-09 11:18:00'),
+    (72,'Fall 2025',0,0,1,1,3,4,3,4,0,0,1,0,1,0,1,0,0,0,1,0,0,1,1,0,0,1,'Challenged',NULL,'2025-11-04 18:12:00'),
+    (73,'Fall 2025',3,3,4,3,1,0,1,1,4,4,3,3,3,3,3,3,3,2,3,3,3,2,2,3,3,3,'Critical',NULL,'2025-10-20 21:24:00'),
+    (75,'Fall 2025',1,0,1,0,4,4,4,4,0,0,0,0,0,0,0,0,1,0,1,1,1,0,0,1,0,1,'Stable',NULL,'2025-10-14 10:30:00'),
+    (76,'Fall 2025',2,2,2,1,2,3,2,2,1,2,1,2,2,2,1,2,1,1,2,0,1,2,1,1,2,1,'Challenged',NULL,'2025-11-01 08:45:00'),
+    (77,'Fall 2025',2,1,1,1,2,2,3,2,0,2,1,1,2,1,1,1,2,1,1,0,1,0,1,1,1,0,'Challenged',NULL,'2025-10-15 10:37:00'),
+    (78,'Fall 2025',0,0,1,1,4,3,4,4,0,1,0,1,1,0,0,1,0,0,0,0,0,0,0,0,1,1,'Stable',NULL,'2025-11-03 15:35:00'),
+    (79,'Fall 2025',2,3,3,2,1,1,2,2,2,2,2,2,3,2,1,2,2,1,0,2,2,2,2,2,2,2,'Challenged',NULL,'2025-10-15 13:59:00'),
+    (80,'Fall 2025',0,0,0,1,3,4,4,4,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,'Stable',NULL,'2025-11-24 19:33:00'),
+    (32,'Spring 2026',2,1,2,1,2,2,3,3,2,1,1,1,1,1,1,1,2,1,1,1,1,2,1,0,1,0,'Challenged',NULL,'2026-03-02 15:00:00'),
+    (33,'Spring 2026',3,2,1,1,1,2,2,3,2,1,2,2,1,2,1,2,2,1,1,1,1,1,3,2,2,2,'Challenged',NULL,'2026-03-10 16:06:00'),
+    (34,'Spring 2026',1,1,2,2,2,3,2,2,1,1,1,2,2,1,3,1,0,1,2,0,1,1,1,1,1,1,'Challenged',NULL,'2026-03-20 18:38:00'),
+    (35,'Spring 2026',2,2,1,1,2,3,3,2,1,0,1,1,1,1,1,1,1,1,2,1,1,1,1,0,1,1,'Challenged',NULL,'2026-02-18 11:21:00'),
+    (36,'Spring 2026',2,2,2,1,2,1,1,2,2,3,1,1,1,1,1,2,2,2,3,1,2,2,2,2,2,2,'Challenged',NULL,'2026-02-05 20:23:00'),
+    (37,'Spring 2026',2,2,2,2,2,3,2,3,1,1,1,1,0,1,1,1,1,0,1,1,1,1,1,1,1,1,'Challenged',NULL,'2026-02-23 18:24:00'),
+    (39,'Spring 2026',2,1,1,2,2,2,3,2,2,1,1,2,1,2,0,2,2,2,0,0,1,1,1,2,1,1,'Challenged',NULL,'2026-03-07 14:39:00'),
+    (40,'Spring 2026',3,3,3,4,0,1,1,0,3,4,3,3,3,2,3,3,2,3,2,2,2,3,2,3,3,2,'Critical',NULL,'2026-03-23 12:03:00'),
+    (41,'Spring 2026',2,2,1,1,2,3,3,2,2,2,0,1,1,2,1,1,1,1,1,0,1,1,1,2,1,1,'Challenged',NULL,'2026-02-27 20:28:00'),
+    (42,'Spring 2026',0,1,0,0,4,4,4,4,0,0,1,0,0,0,1,0,1,0,1,0,1,1,0,0,0,0,'Stable',NULL,'2026-02-01 17:43:00'),
+    (43,'Spring 2026',3,2,3,4,0,0,1,0,3,3,3,3,2,3,2,3,3,3,2,3,3,2,2,3,3,1,'Critical',NULL,'2026-03-23 10:37:00'),
+    (44,'Spring 2026',2,2,2,2,3,3,2,2,2,2,1,1,0,0,2,2,1,1,1,1,0,1,1,1,2,1,'Challenged',NULL,'2026-03-20 21:07:00'),
+    (46,'Spring 2026',2,1,2,2,3,2,3,2,1,1,2,2,1,2,0,2,1,0,1,1,1,1,0,2,1,1,'Challenged',NULL,'2026-03-21 10:48:00'),
+    (47,'Spring 2026',1,1,1,1,3,2,4,3,2,2,2,1,1,1,1,0,1,0,0,1,0,0,1,0,0,1,'Challenged',NULL,'2026-03-25 09:52:00'),
+    (49,'Spring 2026',1,1,1,0,4,4,3,4,0,0,0,1,0,0,0,0,1,1,0,1,0,0,0,0,1,0,'Stable',NULL,'2026-02-28 13:36:00'),
+    (50,'Spring 2026',0,1,1,1,3,3,2,2,1,2,1,1,0,1,0,2,1,1,1,1,1,1,1,1,0,0,'Challenged',NULL,'2026-03-19 16:03:00'),
+    (51,'Spring 2026',0,0,0,0,4,3,3,3,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,'Stable',NULL,'2026-03-07 11:39:00'),
+    (52,'Spring 2026',3,3,3,3,2,2,1,1,3,3,2,2,2,1,2,2,2,2,2,3,2,2,2,2,3,2,'Challenged',NULL,'2026-03-15 12:45:00'),
+    (53,'Spring 2026',1,0,0,0,4,4,4,4,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,0,'Stable',NULL,'2026-02-06 17:32:00'),
+    (54,'Spring 2026',3,2,2,3,3,2,1,2,2,2,1,2,1,0,1,1,1,1,1,1,0,1,1,1,1,1,'Challenged',NULL,'2026-02-10 15:48:00'),
+    (55,'Spring 2026',1,1,0,1,3,4,4,4,1,0,1,1,0,1,2,1,1,1,0,1,0,1,1,0,0,2,'Challenged',NULL,'2026-02-27 10:00:00'),
+    (57,'Spring 2026',2,2,2,2,2,2,3,2,1,1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,2,1,'Challenged',NULL,'2026-02-13 10:50:00'),
+    (58,'Spring 2026',1,0,0,1,3,4,4,3,0,1,0,0,0,1,0,0,0,0,1,0,0,1,0,0,1,0,'Stable',NULL,'2026-03-09 18:49:00'),
+    (59,'Spring 2026',3,4,4,3,0,0,1,0,3,4,3,2,3,2,3,3,3,2,3,1,3,3,2,2,1,3,'Critical',NULL,'2026-02-26 15:48:00'),
+    (60,'Spring 2026',0,0,1,1,3,3,4,4,0,1,1,1,1,0,1,1,0,0,0,0,1,0,1,1,2,1,'Challenged',NULL,'2026-02-27 16:44:00'),
+    (61,'Spring 2026',1,2,2,3,2,2,1,1,2,2,2,2,1,2,1,2,2,2,2,2,2,1,1,2,2,2,'Challenged',NULL,'2026-03-22 19:25:00'),
+    (62,'Spring 2026',0,1,2,1,3,3,3,4,1,0,1,0,1,1,1,0,1,0,1,1,0,0,1,1,0,1,'Challenged',NULL,'2026-02-27 12:47:00'),
+    (63,'Spring 2026',1,1,2,1,4,2,3,4,0,0,0,1,1,0,0,1,1,0,1,1,0,1,1,1,0,1,'Challenged',NULL,'2026-03-06 12:01:00'),
+    (64,'Spring 2026',2,1,1,1,2,1,3,3,2,2,2,0,1,0,0,1,0,1,1,1,1,1,1,1,1,1,'Challenged',NULL,'2026-02-17 16:58:00'),
+    (65,'Spring 2026',0,1,0,1,4,4,4,3,0,1,0,0,0,1,1,1,1,1,1,0,0,0,0,1,0,0,'Challenged',NULL,'2026-03-16 20:05:00'),
+    (66,'Spring 2026',0,0,0,0,4,3,4,4,1,0,0,0,1,1,2,1,0,0,0,0,1,0,0,1,0,0,'Stable',NULL,'2026-02-01 20:06:00'),
+    (67,'Spring 2026',1,2,2,2,3,2,1,2,2,2,1,2,1,2,2,2,0,1,1,2,1,2,1,2,2,2,'Challenged',NULL,'2026-03-15 20:41:00'),
+    (68,'Spring 2026',0,0,0,1,4,4,3,4,0,1,1,0,0,0,0,1,0,0,0,1,1,0,1,0,1,1,'Stable',NULL,'2026-02-03 16:49:00'),
+    (69,'Spring 2026',0,0,0,1,4,4,4,4,0,1,0,1,1,0,0,0,0,0,0,0,0,0,1,1,1,0,'Stable',NULL,'2026-03-27 20:10:00'),
+    (70,'Spring 2026',0,0,0,0,4,4,4,4,1,0,1,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0,'Stable',NULL,'2026-02-28 09:14:00'),
+    (71,'Spring 2026',2,1,0,1,2,2,3,3,1,2,1,1,2,0,2,1,1,2,0,0,1,1,0,0,2,1,'Challenged',NULL,'2026-03-16 19:26:00'),
+    (73,'Spring 2026',1,0,1,1,4,3,4,4,0,1,0,0,0,0,1,0,1,0,0,0,1,0,0,0,0,0,'Stable',NULL,'2026-03-04 09:34:00'),
+    (74,'Spring 2026',0,0,0,0,4,4,4,4,1,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,0,'Stable',NULL,'2026-03-17 08:49:00'),
+    (75,'Spring 2026',0,1,0,1,4,3,4,4,0,1,1,1,0,0,1,0,0,0,0,0,0,0,0,0,1,0,'Stable',NULL,'2026-03-09 21:00:00'),
+    (76,'Spring 2026',4,2,3,2,1,0,1,1,3,3,2,2,3,2,2,2,3,3,2,3,3,2,3,3,2,2,'Critical',NULL,'2026-03-18 19:23:00'),
+    (77,'Spring 2026',2,3,2,3,2,2,2,2,2,1,2,2,2,1,2,2,2,2,1,1,1,2,2,2,1,2,'Challenged',NULL,'2026-02-20 09:18:00'),
+    (78,'Spring 2026',2,2,3,3,2,2,1,2,2,2,2,2,2,2,2,1,1,1,2,2,2,1,1,1,1,2,'Challenged',NULL,'2026-03-10 18:47:00'),
+    (79,'Spring 2026',1,3,2,2,2,2,1,1,2,3,0,0,1,3,2,1,2,1,1,2,3,2,1,1,2,1,'Challenged',NULL,'2026-03-18 08:51:00'),
+    (80,'Spring 2026',0,0,0,0,3,3,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,'Stable',NULL,'2026-02-01 19:01:00'),
+    (31,'Summer 2026',1,0,0,1,4,4,3,4,0,0,0,0,0,0,1,0,0,0,1,1,0,0,1,0,0,0,'Stable',NULL,'2026-07-05 21:49:00'),
+    (33,'Summer 2026',2,2,1,2,3,2,3,2,2,2,1,2,1,1,3,2,2,1,1,2,1,1,1,1,2,1,'Challenged',NULL,'2026-06-05 11:18:00'),
+    (34,'Summer 2026',0,2,2,1,4,2,2,2,2,2,2,0,1,2,2,1,1,1,1,1,2,2,2,1,1,1,'Challenged',NULL,'2026-06-25 12:09:00'),
+    (35,'Summer 2026',1,1,1,1,3,3,3,2,2,1,1,0,1,1,0,2,0,1,0,1,1,1,1,1,1,1,'Challenged',NULL,'2026-07-19 21:14:00'),
+    (37,'Summer 2026',2,0,2,2,2,3,3,2,1,1,1,1,2,1,1,1,2,2,1,1,1,1,2,1,1,1,'Challenged',NULL,'2026-06-23 09:01:00'),
+    (38,'Summer 2026',2,2,2,2,2,2,2,2,2,1,2,2,2,1,1,1,2,1,1,1,2,1,1,2,1,2,'Challenged',NULL,'2026-06-11 15:21:00'),
+    (39,'Summer 2026',2,1,2,1,2,2,3,2,2,1,1,1,1,2,1,2,2,1,1,2,1,2,1,1,1,1,'Challenged',NULL,'2026-07-24 21:11:00'),
+    (40,'Summer 2026',1,2,1,2,2,3,2,2,2,1,2,1,1,1,0,2,2,1,1,2,1,0,1,2,1,2,'Challenged',NULL,'2026-07-16 09:31:00'),
+    (42,'Summer 2026',0,0,0,0,4,4,4,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,'Stable',NULL,'2026-07-05 21:05:00'),
+    (43,'Summer 2026',3,3,3,3,0,0,1,0,4,4,3,3,2,3,3,3,3,3,3,2,2,2,2,2,2,2,'Critical',NULL,'2026-06-01 13:13:00'),
+    (47,'Summer 2026',3,4,4,3,1,0,1,0,3,4,3,2,2,2,3,2,2,2,3,2,2,2,2,3,2,2,'Critical',NULL,'2026-06-20 20:14:00'),
+    (48,'Summer 2026',2,2,2,2,1,2,2,2,1,2,2,2,1,1,2,1,2,2,1,1,2,2,2,1,2,2,'Challenged',NULL,'2026-06-03 17:41:00'),
+    (49,'Summer 2026',0,0,0,0,4,3,4,2,1,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,'Stable',NULL,'2026-06-26 08:19:00'),
+    (50,'Summer 2026',1,2,2,1,3,3,3,2,1,1,1,1,1,1,0,1,2,1,1,1,1,0,1,0,0,0,'Challenged',NULL,'2026-06-15 18:14:00'),
+    (51,'Summer 2026',0,0,1,1,4,4,4,4,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,'Stable',NULL,'2026-06-14 21:52:00'),
+    (52,'Summer 2026',2,3,3,3,2,1,1,1,3,3,2,2,3,3,2,3,3,2,3,2,2,3,2,3,2,1,'Critical',NULL,'2026-06-03 21:45:00'),
+    (53,'Summer 2026',1,0,1,0,4,4,3,3,0,0,0,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,'Stable',NULL,'2026-06-22 17:44:00'),
+    (54,'Summer 2026',2,2,2,3,2,3,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,1,'Challenged',NULL,'2026-06-12 20:14:00'),
+    (55,'Summer 2026',4,4,4,4,1,0,0,1,3,3,3,2,2,3,2,3,3,3,2,2,3,3,3,3,3,3,'Critical',NULL,'2026-07-20 20:30:00'),
+    (56,'Summer 2026',3,3,2,3,1,1,0,1,3,4,3,2,2,2,2,3,3,3,2,2,2,2,2,2,2,2,'Critical',NULL,'2026-07-07 11:42:00'),
+    (57,'Summer 2026',1,2,2,2,3,2,2,2,2,0,1,2,1,2,0,2,2,1,2,0,1,0,1,0,2,2,'Challenged',NULL,'2026-07-13 09:30:00'),
+    (59,'Summer 2026',3,2,3,2,2,2,2,1,2,2,2,2,2,2,1,2,1,1,2,3,1,3,2,2,2,2,'Challenged',NULL,'2026-07-14 15:46:00'),
+    (62,'Summer 2026',2,2,1,1,4,2,4,2,1,1,1,1,0,1,0,1,2,1,1,0,1,1,1,1,1,0,'Challenged',NULL,'2026-07-28 18:01:00'),
+    (63,'Summer 2026',1,1,0,1,3,2,3,2,2,1,1,1,2,0,0,1,1,1,0,1,0,1,1,1,0,0,'Challenged',NULL,'2026-07-18 14:20:00'),
+    (65,'Summer 2026',1,0,0,0,2,3,4,3,0,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,1,'Stable',NULL,'2026-06-03 10:55:00'),
+    (66,'Summer 2026',1,1,0,1,4,3,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,'Stable',NULL,'2026-07-11 08:57:00'),
+    (69,'Summer 2026',1,1,1,0,4,3,4,4,0,1,0,0,0,1,2,0,1,0,0,0,0,0,1,0,1,0,'Challenged',NULL,'2026-06-14 10:33:00'),
+    (70,'Summer 2026',0,0,0,0,4,4,4,4,0,0,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,'Stable',NULL,'2026-07-10 11:31:00'),
+    (71,'Summer 2026',2,2,1,2,3,1,2,2,2,2,1,1,0,1,2,0,0,1,1,2,1,1,1,1,2,2,'Challenged',NULL,'2026-07-26 09:53:00'),
+    (72,'Summer 2026',1,0,1,0,4,4,4,4,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0,1,'Stable',NULL,'2026-07-19 21:57:00'),
+    (73,'Summer 2026',0,0,0,0,4,4,3,4,1,0,1,0,0,0,1,0,1,0,0,0,0,0,0,1,1,0,'Stable',NULL,'2026-07-25 16:08:00'),
+    (74,'Summer 2026',2,2,2,2,2,1,1,1,2,2,1,1,2,1,1,2,1,2,1,1,0,1,1,1,2,2,'Challenged',NULL,'2026-06-06 20:39:00'),
+    (75,'Summer 2026',0,0,0,0,3,3,4,4,0,1,1,0,0,1,0,1,0,0,0,0,1,0,1,0,0,1,'Stable',NULL,'2026-07-20 10:32:00'),
+    (77,'Summer 2026',0,1,1,1,4,3,4,4,0,1,0,0,0,0,0,1,1,0,0,0,1,0,0,0,0,0,'Stable',NULL,'2026-07-25 18:12:00'),
+    (79,'Summer 2026',0,0,1,1,4,4,4,3,1,0,0,0,0,0,0,0,0,0,1,0,1,0,0,0,0,1,'Stable',NULL,'2026-07-03 16:38:00'),
+    (80,'Summer 2026',0,0,0,0,4,4,4,3,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,'Stable',NULL,'2026-07-01 10:15:00'),
+    (31,'Fall 2026',1,1,1,1,4,3,3,4,1,0,0,0,0,0,1,1,0,1,0,0,0,1,0,1,0,0,'Stable',NULL,NOW() - INTERVAL '48 days 20 hours'),
+    (32,'Fall 2026',2,3,3,3,2,2,2,1,2,3,2,2,2,1,1,1,2,1,2,2,2,1,2,2,1,2,'Challenged',NULL,NOW() - INTERVAL '38 days 7 hours'),
+    (33,'Fall 2026',2,1,2,2,1,2,1,2,2,3,2,1,1,1,2,1,0,1,2,1,2,1,0,1,1,2,'Challenged',NULL,NOW() - INTERVAL '15 days 5 hours'),
+    (34,'Fall 2026',3,4,3,3,1,1,1,1,3,3,3,2,2,3,2,1,3,2,2,2,3,2,2,2,3,2,'Critical',NULL,NOW() - INTERVAL '9 days 10 hours'),
+    (35,'Fall 2026',2,0,1,2,3,4,3,2,1,1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,1,0,'Challenged',NULL,NOW() - INTERVAL '4 days 7 hours'),
+    (37,'Fall 2026',3,4,3,4,1,0,1,1,3,3,2,2,2,2,3,2,3,3,2,3,3,3,3,3,3,3,'Critical',NULL,NOW() - INTERVAL '9 days 15 hours'),
+    (39,'Fall 2026',1,1,1,1,2,3,2,2,2,2,1,1,2,2,1,1,1,1,1,1,1,1,1,1,1,2,'Challenged',NULL,NOW() - INTERVAL '3 days 17 hours'),
+    (40,'Fall 2026',1,1,2,2,3,2,2,3,1,2,2,1,1,1,1,1,2,2,2,1,2,1,2,1,0,1,'Challenged',NULL,NOW() - INTERVAL '30 days 6 hours'),
+    (42,'Fall 2026',1,0,0,0,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,'Stable',NULL,NOW() - INTERVAL '28 days 2 hours'),
+    (43,'Fall 2026',4,4,2,3,1,1,1,0,4,3,3,3,3,3,2,3,2,3,2,3,3,2,2,3,3,3,'Critical',NULL,NOW() - INTERVAL '16 days 10 hours'),
+    (44,'Fall 2026',2,2,1,1,3,2,3,3,1,1,1,3,1,2,2,1,1,1,1,1,2,1,1,1,0,0,'Challenged',NULL,NOW() - INTERVAL '38 days 23 hours'),
+    (45,'Fall 2026',3,3,4,4,0,0,1,0,3,4,3,2,2,3,3,2,2,2,3,2,2,3,2,2,3,3,'Critical',NULL,NOW() - INTERVAL '11 days 22 hours'),
+    (46,'Fall 2026',3,3,2,2,2,2,1,3,2,1,1,1,1,1,2,1,1,1,1,1,1,2,2,2,1,1,'Challenged',NULL,NOW() - INTERVAL '46 days 16 hours'),
+    (48,'Fall 2026',2,2,2,1,2,3,3,3,2,2,1,1,1,1,1,1,1,2,1,1,2,1,1,1,2,0,'Challenged',NULL,NOW() - INTERVAL '42 days 18 hours'),
+    (49,'Fall 2026',0,0,0,0,4,4,4,3,0,1,1,1,1,1,0,1,0,0,1,0,0,0,0,0,0,0,'Stable',NULL,NOW() - INTERVAL '49 days 3 hours'),
+    (53,'Fall 2026',3,4,4,2,1,1,1,0,4,3,2,2,3,3,2,3,2,2,3,3,3,2,2,1,2,3,'Critical',NULL,NOW() - INTERVAL '29 days 6 hours'),
+    (55,'Fall 2026',0,0,0,1,4,4,4,4,1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,0,1,0,'Stable',NULL,NOW() - INTERVAL '17 days 13 hours'),
+    (56,'Fall 2026',4,4,4,3,1,1,1,1,4,4,2,3,2,3,3,2,2,3,3,3,2,3,3,2,2,3,'Critical',NULL,NOW() - INTERVAL '11 days 11 hours'),
+    (57,'Fall 2026',1,0,1,0,4,3,3,4,1,0,0,1,1,0,1,0,0,0,0,1,0,0,1,0,1,0,'Stable',NULL,NOW() - INTERVAL '12 days 1 hours'),
+    (58,'Fall 2026',0,0,1,1,4,4,4,3,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,'Stable',NULL,NOW() - INTERVAL '41 days 20 hours'),
+    (59,'Fall 2026',2,2,2,2,1,3,1,2,3,3,1,2,2,1,1,2,2,2,2,2,2,2,2,1,0,2,'Challenged',NULL,NOW() - INTERVAL '4 days 23 hours'),
+    (62,'Fall 2026',0,0,2,1,3,4,2,3,1,1,1,0,0,0,1,1,1,1,1,1,1,1,0,0,1,0,'Challenged',NULL,NOW() - INTERVAL '44 days 6 hours'),
+    (63,'Fall 2026',2,2,2,2,1,1,2,1,3,1,1,2,2,2,1,1,2,2,2,2,2,2,1,2,2,1,'Challenged',NULL,NOW() - INTERVAL '31 days 1 hours'),
+    (64,'Fall 2026',2,1,3,1,2,2,2,2,2,2,1,2,1,1,2,2,1,1,2,2,1,1,1,1,1,2,'Challenged',NULL,NOW() - INTERVAL '5 days 8 hours'),
+    (69,'Fall 2026',1,1,1,1,2,4,2,2,1,1,1,0,2,0,1,1,1,1,1,0,1,1,1,1,1,1,'Challenged',NULL,NOW() - INTERVAL '39 days 1 hours'),
+    (70,'Fall 2026',0,0,1,0,3,4,4,4,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,'Stable',NULL,NOW() - INTERVAL '16 days 22 hours'),
+    (72,'Fall 2026',2,3,3,3,1,1,1,0,3,4,3,2,3,3,2,3,3,3,2,3,3,2,2,3,3,3,'Critical',NULL,NOW() - INTERVAL '7 days 0 hours'),
+    (74,'Fall 2026',3,4,3,3,0,1,1,0,2,4,3,3,1,2,2,2,3,2,3,3,2,3,3,2,3,3,'Critical',NULL,NOW() - INTERVAL '34 days 7 hours'),
+    (78,'Fall 2026',0,1,0,0,4,3,4,4,0,1,0,0,0,0,0,0,1,0,0,1,1,0,0,0,1,1,'Stable',NULL,NOW() - INTERVAL '10 days 9 hours'),
+    (79,'Fall 2026',2,2,2,2,1,2,2,1,2,3,2,2,2,3,2,1,1,2,1,1,1,2,2,1,2,2,'Challenged',NULL,NOW() - INTERVAL '39 days 10 hours');
 
-INSERT INTO appointments (student_id, professional_id, status, scheduled_at) VALUES
-    (48,21,'accepted','2026-03-20 10:00:00'),
-    (52,21,'accepted','2026-03-20 13:00:00'),
-    (54,22,'accepted','2026-03-21 09:00:00'),
-    (56,23,'accepted','2026-03-22 14:00:00'),
-    (34,24,'accepted','2026-03-19 10:30:00'),
-    (38,25,'accepted','2026-03-20 15:00:00'),
-    (42,26,'accepted','2026-03-21 11:30:00'),
-    (44,27,'accepted','2026-03-22 09:30:00'),
-    (60,21,'pending',NULL),
-    (61,22,'pending',NULL),
-    (36,23,'pending',NULL),
-    (40,24,'pending',NULL),
-    (45,25,'pending',NULL),
-    (39,26,'declined',NULL),
-    (46,27,'declined',NULL),
-    (65,21,'completed','2026-02-15 10:00:00'),
-    (71,22,'completed','2026-02-18 14:00:00'),
-    (50,23,'completed','2026-02-20 09:00:00');
+-- ── Archived statistics ─────────────────────────────────────────────
+-- Summer 2025 has no individual rows in this demo, only its summary.
+INSERT INTO semester_stats (semester, total, stable, challenged, critical, at_risk_pct, llm_summary, compiled_at)
+VALUES ('Summer 2025', 30, 14, 12, 4, 53.33, NULL, '2025-09-01 00:01:00');
 
-INSERT INTO events (title,date,time,venue,description,rsvp_count,created_by) VALUES
-    ('Mental Health Awareness Workshop','2026-03-25','10:00:00','Auditorium A, Main Campus','An interactive workshop covering stress management techniques, mindfulness practices, and how to support peers facing mental health challenges.',12,11),
-    ('Exam Stress Relief Session','2026-04-02','14:00:00','Student Lounge, Block C','Drop-in session with licensed counselors before the mid-term period. Learn breathing exercises, time management strategies, and quick relaxation techniques.',8,12),
-    ('Talk: Understanding Anxiety','2026-04-10','11:00:00','Lecture Hall 3, Faculty of Arts','A seminar-style talk exploring the roots of academic anxiety, common triggers, and evidence-based coping strategies.',20,13),
-    ('Mindfulness & Meditation Morning','2026-04-18','08:00:00','Rooftop Garden, Library Building','A guided 60-minute outdoor mindfulness session. No prior experience needed. Limited to 30 participants.',15,11),
-    ('Peer Support Circle','2026-04-24','16:00:00','Room 204, Student Affairs Building','A safe, moderated peer support group facilitated by a trained mental health professional. Strictly confidential.',6,14),
-    ('Depression Awareness Day — Panel','2026-05-01','13:00:00','Conference Hall, Administration Building','A university-wide panel discussion featuring mental health professionals and student representatives.',25,12),
-    ('Resilience Building Workshop','2026-05-08','10:00:00','Training Room 1, Student Union','A hands-on two-hour workshop focusing on building emotional resilience through cognitive reframing and problem-solving.',9,15);
+-- The other finished semesters are summarised from the rows above.
+INSERT INTO semester_stats (semester, total, stable, challenged, critical, at_risk_pct, llm_summary, compiled_at)
+SELECT semester,
+       COUNT(*),
+       COUNT(*) FILTER (WHERE final_status = 'Stable'),
+       COUNT(*) FILTER (WHERE final_status = 'Challenged'),
+       COUNT(*) FILTER (WHERE final_status = 'Critical'),
+       ROUND(100.0 * COUNT(*) FILTER (WHERE final_status <> 'Stable') / COUNT(*), 2),
+       NULL,
+       CASE semester WHEN 'Fall 2025'   THEN TIMESTAMP '2026-01-01 00:01:00'
+                     WHEN 'Spring 2026' THEN TIMESTAMP '2026-05-01 00:01:00'
+                     ELSE                    TIMESTAMP '2026-09-01 00:01:00' END
+FROM questionnaire_responses
+WHERE semester IN ('Fall 2025', 'Spring 2026', 'Summer 2026')
+GROUP BY semester;
 
-INSERT INTO event_rsvps (student_id,event_id) VALUES
-    (31,1),(32,1),(33,1),(35,1),(37,1),(41,1),(43,1),(49,1),(57,1),(64,1),(69,1),(76,1),
-    (34,2),(36,2),(38,2),(42,2),(44,2),(50,2),(58,2),(70,2),
-    (31,3),(32,3),(33,3),(34,3),(35,3),(36,3),(37,3),(38,3),(39,3),(40,3),
-    (41,3),(42,3),(43,3),(44,3),(45,3),(49,3),(50,3),(57,3),(64,3),(69,3),
-    (31,4),(33,4),(35,4),(37,4),(41,4),(43,4),(49,4),(51,4),(53,4),(55,4),
-    (57,4),(59,4),(64,4),(69,4),(77,4),
-    (39,5),(45,5),(46,5),(53,5),(59,5),(71,5),
-    (31,6),(32,6),(33,6),(34,6),(35,6),(36,6),(37,6),(38,6),(39,6),(40,6),
-    (41,6),(42,6),(43,6),(44,6),(45,6),(46,6),(47,6),(48,6),(49,6),(50,6),
-    (51,6),(57,6),(64,6),(69,6),(76,6),
-    (33,7),(37,7),(41,7),(43,7),(51,7),(55,7),(59,7),(73,7),(79,7);
+UPDATE semester_schedule s
+SET stats_compiled = TRUE
+WHERE EXISTS (SELECT 1 FROM semester_stats t WHERE t.semester = s.semester);
+
+-- ── Appointments ────────────────────────────────────────────────────
+INSERT INTO appointments (student_id, professional_id, status, scheduled_at, created_at) VALUES
+    (33,22,'accepted',CURRENT_DATE + 9 + TIME '15:30',NOW() - INTERVAL '4 days'),
+    (39,24,'accepted',CURRENT_DATE + 2 + TIME '13:00',NOW() - INTERVAL '2 days'),
+    (34,26,'accepted',CURRENT_DATE + 5 + TIME '10:00',NOW() - INTERVAL '9 days'),
+    (35,28,'accepted',CURRENT_DATE + 3 + TIME '09:00',NOW() - INTERVAL '4 days'),
+    (44,30,'accepted',CURRENT_DATE + 1 + TIME '14:30',NOW() - INTERVAL '9 days'),
+    (63,22,'accepted',CURRENT_DATE + 1 + TIME '15:30',NOW() - INTERVAL '9 days'),
+    (74,24,'accepted',CURRENT_DATE + 7 + TIME '11:30',NOW() - INTERVAL '4 days'),
+    (45,26,'accepted',CURRENT_DATE + 10 + TIME '09:00',NOW() - INTERVAL '8 days'),
+    (64,30,'pending',NULL,NOW() - INTERVAL '1 days 17 hours'),
+    (69,22,'pending',NULL,NOW() - INTERVAL '2 days 0 hours'),
+    (40,24,'pending',NULL,NOW() - INTERVAL '3 days 7 hours'),
+    (43,26,'pending',NULL,NOW() - INTERVAL '2 days 6 hours'),
+    (32,28,'pending',NULL,NOW() - INTERVAL '0 days 4 hours'),
+    (37,30,'pending',NULL,NOW() - INTERVAL '3 days 14 hours'),
+    (62,22,'pending',NULL,NOW() - INTERVAL '0 days 18 hours'),
+    (79,24,'pending',NULL,NOW() - INTERVAL '4 days 16 hours'),
+    (72,26,'pending',NULL,NOW() - INTERVAL '3 days 11 hours'),
+    (56,29,'declined',NULL,NOW() - INTERVAL '9 days'),
+    (53,21,'declined',NULL,NOW() - INTERVAL '5 days'),
+    (48,23,'declined',NULL,NOW() - INTERVAL '13 days'),
+    (46,22,'completed',CURRENT_DATE - 39 + TIME '09:00',NOW() - INTERVAL '55 days'),
+    (59,24,'completed',CURRENT_DATE - 23 + TIME '11:30',NOW() - INTERVAL '50 days'),
+    (49,26,'completed',CURRENT_DATE - 28 + TIME '09:00',NOW() - INTERVAL '52 days'),
+    (54,28,'completed',CURRENT_DATE - 15 + TIME '14:30',NOW() - INTERVAL '47 days'),
+    (55,30,'completed',CURRENT_DATE - 25 + TIME '09:00',NOW() - INTERVAL '55 days'),
+    (58,22,'completed',CURRENT_DATE - 28 + TIME '13:00',NOW() - INTERVAL '56 days'),
+    (76,24,'completed',CURRENT_DATE - 9 + TIME '13:00',NOW() - INTERVAL '60 days'),
+    (52,29,'accepted',CURRENT_DATE - 2 + TIME '14:30',NOW() - INTERVAL '8 days'),
+    (65,21,'accepted',CURRENT_DATE - 3 + TIME '09:00',NOW() - INTERVAL '7 days');
+
+UPDATE appointments SET is_new = (status = 'pending');
+
+-- ── Events and RSVPs ────────────────────────────────────────────────
+INSERT INTO events (title, date, time, venue, description, rsvp_count, created_by) VALUES
+    ('Mental Health Awareness Workshop',CURRENT_DATE + -24,'10:00','Auditorium A, Main Campus','An interactive workshop covering stress management techniques, mindfulness practices, and how to support peers facing mental health challenges.',0,11),
+    ('Exam Stress Relief Session',CURRENT_DATE + -8,'14:00','Student Lounge, Block C','Drop-in session with licensed counselors before the exam period. Learn breathing exercises, time management strategies, and quick relaxation techniques.',0,12),
+    ('Talk: Understanding Anxiety',CURRENT_DATE + 3,'11:00','Lecture Hall 3, Faculty of Arts','A seminar-style talk exploring the roots of academic anxiety, common triggers, and evidence-based coping strategies.',0,13),
+    ('Mindfulness & Meditation Morning',CURRENT_DATE + 6,'08:00','Rooftop Garden, Library Building','A guided 60-minute outdoor mindfulness session. No prior experience needed. Limited to 30 participants.',0,11),
+    ('Peer Support Circle',CURRENT_DATE + 10,'16:00','Room 204, Student Affairs Building','A safe, moderated peer support group facilitated by a trained mental health professional. Strictly confidential.',0,14),
+    ('Depression Awareness Day — Panel',CURRENT_DATE + 15,'13:00','Conference Hall, Administration Building','A university-wide panel discussion featuring mental health professionals and student representatives.',0,12),
+    ('Resilience Building Workshop',CURRENT_DATE + 21,'10:00','Training Room 1, Student Union','A hands-on two-hour workshop focusing on building emotional resilience through cognitive reframing and problem-solving.',0,15),
+    ('Sleep & Study Balance Seminar',CURRENT_DATE + 28,'15:00','Lecture Hall 1, Science Block','Practical advice on sleep hygiene, study schedules, and avoiding burnout during the final exam weeks.',0,16),
+    ('Wellness Fair',CURRENT_DATE + 40,'09:30','Central Courtyard','Stalls, free screenings of stress levels, and one-to-one chats with counselors from the Student Affairs team.',0,17);
+
+INSERT INTO event_rsvps (student_id, event_id) VALUES
+    (31,1), (32,1), (34,1), (36,1), (39,1), (47,1), (49,1), (53,1), (54,1), (60,1),
+    (65,1), (67,1), (68,1), (70,1), (73,1), (37,2), (38,2), (67,2), (68,2), (73,2),
+    (74,2), (75,2), (31,3), (43,3), (46,3), (48,3), (52,3), (54,3), (56,3), (59,3),
+    (60,3), (61,3), (65,3), (66,3), (68,3), (74,3), (75,3), (78,3), (80,3), (39,4),
+    (47,4), (48,4), (50,4), (52,4), (57,4), (61,4), (64,4), (72,4), (77,4), (80,4),
+    (44,5), (52,5), (64,5), (71,5), (80,5), (31,6), (34,6), (35,6), (36,6), (37,6),
+    (39,6), (42,6), (50,6), (51,6), (53,6), (60,6), (61,6), (64,6), (65,6), (67,6),
+    (69,6), (73,6), (75,6), (77,6), (79,6), (44,7), (46,7), (49,7), (51,7), (52,7),
+    (53,7), (54,7), (58,7), (68,7), (71,7), (73,7), (74,7), (80,7), (32,8), (34,8),
+    (39,8), (41,8), (44,8), (47,8), (52,8), (56,8), (60,8), (61,8), (62,8), (63,8),
+    (64,8), (65,8), (66,8), (69,8), (74,8), (77,8), (39,9), (42,9), (45,9), (49,9),
+    (51,9), (63,9), (68,9), (70,9), (74,9), (77,9);
+
+UPDATE events e
+SET rsvp_count = (SELECT COUNT(*) FROM event_rsvps r WHERE r.event_id = e.id);
+
+-- ── Authority alerts ────────────────────────────────────────────────
+INSERT INTO analytics_alerts (alert_type, message, semester, department, dismissed) VALUES
+    ('critical_surge','Critical cases rose from 13.9% of respondents in Summer 2026 to 26.7% so far in Fall 2026.','Fall 2026',NULL,FALSE),
+    ('department_at_risk','CSE: 89% of respondents this semester are Challenged or Critical (8 of 9).','Fall 2026','CSE',FALSE),
+    ('symptom_spike','Average score on PHQ-9 item 9 (thoughts of self-harm) rose from 0.94 to 1.33 since last semester.','Fall 2026',NULL,FALSE),
+    ('critical_surge','Critical cases rose noticeably between Spring 2026 and Summer 2026.','Summer 2026',NULL,TRUE);
+
+-- Keep the SERIAL counters in step (ids were inserted in order, so this is a safety net).
+SELECT setval(pg_get_serial_sequence('users','id'), (SELECT MAX(id) FROM users));
