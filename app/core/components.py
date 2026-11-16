@@ -32,6 +32,22 @@ ROLE_DASHBOARD = {
 }
 
 # CSS class on the page wrapper for each role (see layout.css).
+# Each role signs in on its own page (URL names, see core/urls.py).
+ROLE_LOGIN = {
+    ROLE_STUDENT: 'login',
+    ROLE_PROFESSIONAL: 'professional_login',
+    ROLE_AUTHORITY: 'authority_login',
+    ROLE_ADMIN: 'admin_login',
+}
+
+# Wording on each role's sign-in page.
+ROLE_LOGIN_TEXT = {
+    ROLE_STUDENT: ('Student sign in', 'Sign in to your Baymax student account'),
+    ROLE_PROFESSIONAL: ('Professional sign in', 'Mental health professionals sign in here'),
+    ROLE_AUTHORITY: ('Authority sign in', 'University authorities sign in here'),
+    ROLE_ADMIN: ('Admin IT sign in', 'Admin IT staff sign in here'),
+}
+
 ROLE_TINT = {
     ROLE_STUDENT: 'tint-student',
     ROLE_PROFESSIONAL: 'tint-professional',

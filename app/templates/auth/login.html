@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %}Sign in — Baymax{% endblock %}
+{% block title %}{{ portal_title }} — Baymax{% endblock %}
 {% block page_class %}bg-gradient-soft{% endblock %}
 {% block navbar %}{% endblock %}
 
@@ -14,8 +14,8 @@
   <div class="card card-static">
     <div class="text-center mb-md">
       <div class="brand-face brand-face-lg animate-float">(●—●)</div>
-      <h1 class="display-md">Welcome back</h1>
-      <p class="body-sm mt-sm">Sign in to your Baymax account</p>
+      <h1 class="display-md">{{ portal_title }}</h1>
+      <p class="body-sm mt-sm">{{ portal_subtitle }}</p>
     </div>
 
     {% if google_url %}

@@ -5,12 +5,16 @@ Sprint 5 authority, Sprint 6 admin.
 """
 from django.urls import path
 
+from core.components import ROLE_ADMIN, ROLE_AUTHORITY, ROLE_PROFESSIONAL, ROLE_STUDENT
 from core.views import admin, auth, authority, professional, student
 
 urlpatterns = [
     # ── Auth (all roles) ──
     path('', auth.landing, name='landing'),
-    path('login/', auth.login_view, name='login'),
+    path('login/', auth.login_view, {'portal_role': ROLE_STUDENT}, name='login'),
+    path('professional/login/', auth.login_view, {'portal_role': ROLE_PROFESSIONAL}, name='professional_login'),
+    path('authority/login/', auth.login_view, {'portal_role': ROLE_AUTHORITY}, name='authority_login'),
+    path('admin/login/', auth.login_view, {'portal_role': ROLE_ADMIN}, name='admin_login'),
     path('logout/', auth.logout_view, name='logout'),
     path('register/', auth.register, name='register'),
     path('register/verify/', auth.register_verify, name='register_verify'),

@@ -35,6 +35,8 @@ from core.components import (
     OTP_RESEND_SECONDS,
     OTP_TTL_SECONDS,
     ROLE_DASHBOARD,
+    ROLE_LOGIN,
+    ROLE_LOGIN_TEXT,
     ROLE_STUDENT,
     VALID_DEPARTMENTS,
 )
@@ -59,7 +61,8 @@ def login_required_role(*roles):
                 # Signed in, but this page belongs to another role.
                 messages.error(request, "You don't have access to that page.")
                 return redirect(ROLE_DASHBOARD[current])
-            return redirect('login')
+            # Not signed in: send them to the sign-in page of the role this page is for.
+            return redirect(ROLE_LOGIN[roles[0]] if len(roles) == 1 else 'login')
         return wrapper
     return decorator
 
@@ -129,15 +132,21 @@ def _verify_password(raw: str, stored) -> bool:
     return check_password(raw, stored)
 
 
-def _fetch_user_by_email(email: str):
+def _fetch_user_by_email(email: str, role: str = None):
+    """
+    Look a user up by email. With `role`, only a user of that role is
+    returned, so a sign-in page can never see an account of another role.
+    """
+    sql = ("SELECT id, role, full_name, email, password, is_active "
+           "FROM users WHERE LOWER(email) = LOWER(%s)")
+    params = [email]
+    if role is not None:
+        sql += " AND role = %s"
+        params.append(role)
     conn = connect_db()
     try:
         with conn.cursor() as cur:
-            cur.execute(
-                "SELECT id, role, full_name, email, password, is_active "
-                "FROM users WHERE LOWER(email) = LOWER(%s)",
-                (email,),
-            )
+            cur.execute(sql, params)
             return cur.fetchone()
     finally:
         conn.close()
@@ -168,20 +177,29 @@ def landing(request):
     return render(request, 'auth/landing.html', {
         'login_url': safe_reverse('login'),
         'register_url': safe_reverse('register'),
+        'portal_urls': {role: safe_reverse(name) for role, name in ROLE_LOGIN.items()},
     })
 
 
 @rate_limit(max_attempts=LOGIN_MAX_ATTEMPTS, window=LOGIN_WINDOW_SECONDS)
-def login_view(request):
+def login_view(request, portal_role=ROLE_STUDENT):
+    """
+    One sign-in view, four pages (see core/urls.py). Each page only accepts
+    accounts of its own role; only the student page offers Google sign-in
+    and account creation.
+    """
     role = request.session.get('role')
     if role in ROLE_DASHBOARD:
         return redirect_to_dashboard(role)
 
+    title, subtitle = ROLE_LOGIN_TEXT[portal_role]
+    is_student_portal = portal_role == ROLE_STUDENT
     context = {
         'email': '',
-        # Links appear automatically once those routes exist (later chunks).
-        'register_url': safe_reverse('register'),
-        'google_url': safe_reverse('google_start'),
+        'portal_title': title,
+        'portal_subtitle': subtitle,
+        'register_url': safe_reverse('register') if is_student_portal else None,
+        'google_url': safe_reverse('google_start') if is_student_portal else None,
         'landing_url': safe_reverse('landing'),
     }
 
@@ -198,7 +216,9 @@ def login_view(request):
                 f'Too many failed attempts. Please try again in {LOGIN_WINDOW_SECONDS // 60} minutes.',
             )
         else:
-            user = _fetch_user_by_email(email)
+            # Filtering by role here means an account of another role looks
+            # exactly like "no such account": same message, same timing.
+            user = _fetch_user_by_email(email, portal_role)
             if _verify_password(password, user['password'] if user else None):
                 if not user['is_active']:
                     messages.error(request, 'This account has been deactivated. Please contact Admin IT.')
@@ -216,14 +236,18 @@ def login_view(request):
 
 @require_POST
 def logout_view(request):
+    role = request.session.get('role')
     request.session.flush()
     messages.info(request, 'You have been signed out.')
-    return redirect('login')
+    return redirect(ROLE_LOGIN.get(role, 'login'))
 
 
 @login_required_role(*ALL_ROLES)
 def change_password(request):
-    """Password change for every role. Requires the current password."""
+    """
+    Change the password (current password required) — or, for an account that
+    has none yet (created with Google), set one (no current password exists).
+    """
     user_id = request.session['user_id']
 
     conn = connect_db()
@@ -236,12 +260,7 @@ def change_password(request):
                 request.session.flush()
                 return redirect('login')
 
-            if not is_password_usable(row['password']):
-                messages.info(
-                    request,
-                    'Your account signs in with Google, so there is no password to change.',
-                )
-                return redirect_to_dashboard(request.session['role'])
+            has_password = is_password_usable(row['password'])
 
             if request.method == 'POST':
                 current = request.POST.get('current_password', '')
@@ -249,19 +268,20 @@ def change_password(request):
                 confirm = request.POST.get('confirm_password', '')
 
                 errors = []
-                if not check_password(current, row['password']):
-                    errors.append('Your current password is incorrect.')
+                if has_password:
+                    if not check_password(current, row['password']):
+                        errors.append('Your current password is incorrect.')
+                    elif new and new == current:
+                        errors.append('Your new password must be different from the current one.')
                 if new != confirm:
                     errors.append('The new passwords do not match.')
-                elif current and new == current:
-                    errors.append('Your new password must be different from the current one.')
-                if new and new == confirm:
+                if not new:
+                    errors.append('Please enter a new password.')
+                elif new == confirm:
                     try:
                         validate_password(new)
                     except ValidationError as exc:
                         errors.extend(exc.messages)
-                if not new:
-                    errors.append('Please enter a new password.')
 
                 if errors:
                     for error in dict.fromkeys(errors):
@@ -273,12 +293,18 @@ def change_password(request):
                     )
                     conn.commit()
                     request.session.cycle_key()
-                    messages.success(request, 'Your password has been changed.')
+                    if has_password:
+                        messages.success(request, 'Your password has been changed.')
+                    else:
+                        messages.success(
+                            request,
+                            'Your password has been set. You can now sign in with Google or with your email and password.',
+                        )
                     return redirect_to_dashboard(request.session['role'])
     finally:
         conn.close()
 
-    return render(request, 'auth/change_password.html')
+    return render(request, 'auth/change_password.html', {'has_password': has_password})
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -594,7 +620,7 @@ def google_complete(request):
             messages.error(request, 'This account has been deactivated. Please contact Admin IT.')
             return redirect('login')
         if user['role'] != ROLE_STUDENT:
-            messages.error(request, 'Staff accounts sign in with email and password.')
+            messages.error(request, 'Staff accounts sign in with email and password, on their own sign-in page.')
             return redirect('login')
         start_session(request, user)
         messages.success(request, f"Welcome back, {user['full_name']}.")
