@@ -26,6 +26,10 @@ urlpatterns = [
 
     # ── Dashboards (placeholders until their sprint) ──
     path('student/dashboard/', student.dashboard, name='student_dashboard'),
+    # ── Student portal ──
+    path('student/assessment/', student.chatbot, name='chatbot'),
+    path('student/assessment/q/<int:number>/', student.chatbot_question, name='chatbot_question'),
+
     path('professional/dashboard/', professional.dashboard, name='professional_dashboard'),
     path('authority/dashboard/', authority.dashboard, name='authority_dashboard'),
     path('admin/dashboard/', admin.dashboard, name='admin_dashboard'),

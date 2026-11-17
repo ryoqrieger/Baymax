@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Question {{ question.number }} of {{ question_count }} — Baymax{% endblock %}
+{% block page_class %}bg-mint{% endblock %}
+
+{% block content %}
+<div class="container container-md">
+
+  <div class="chat-progress">
+    <div class="chat-progress-head">
+      <span class="label">Question {{ question.number }} of {{ question_count }}</span>
+      <span class="body-sm">{{ percent }}%</span>
+    </div>
+    <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ percent }}">
+      <div class="progress-fill fill-mint w-pct-{{ percent }}"></div>
+    </div>
+  </div>
+
+  <form method="post" novalidate>
+    {% csrf_token %}
+    {# Pressing Enter should mean "Next", so this invisible button comes first. #}
+    <button class="sr-only" type="submit" name="action" value="next" tabindex="-1" aria-hidden="true">Next</button>
+
+    <div class="card card-static mb-md">
+      <div class="question-meta">
+        <span class="badge badge-lavender">{{ question.scale }}</span>
+        <span class="body-sm">{{ question.scale_title }}</span>
+      </div>
+
+      <fieldset class="fieldset-plain">
+        <legend class="display-md question-text">{{ question.text }}</legend>
+
+        <div class="option-grid{% if question.options|length == 5 %} option-grid-5{% endif %}">
+          {% for value, label in question.options %}
+          <label class="option-btn">
+            <input class="sr-only" type="radio" name="answer" value="{{ value }}"{% if selected == value %} checked{% endif %}>
+            <strong class="option-title">{{ value }} — {{ label }}</strong>
+          </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="chat-nav">
+      <button class="btn btn-ghost" type="submit" name="action" value="prev">← Previous</button>
+      <button class="btn btn-accent" type="submit" name="action" value="next">{% if is_last %}Finish ✓{% else %}Next Question →{% endif %}</button>
+    </div>
+  </form>
+
+  {% if previous %}
+  <div class="chat-history" aria-label="Previous answer">
+    <div class="chat-bubble chat-bubble-bot">
+      <p class="body-sm"><strong>Baymax:</strong> Question {{ previous.number }} — {{ previous.text }}</p>
+    </div>
+    <div class="chat-bubble chat-bubble-user">
+      <p class="body-sm"><strong>You:</strong> {{ previous.value }} — {{ previous.answer }}</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

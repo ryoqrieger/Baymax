@@ -97,3 +97,7 @@ select.input {
 /* ── Search / filter bars ── */
 .search-bar { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
 .search-bar .input { flex: 1; min-width: 200px; }
+
+/* ── Fieldset without the browser's default box (used for question groups) ── */
+.fieldset-plain { border: 0; margin: 0; padding: 0; min-width: 0; }
+.fieldset-plain > legend { padding: 0; width: 100%; }

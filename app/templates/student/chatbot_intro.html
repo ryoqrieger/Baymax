@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Assessment — Baymax{% endblock %}
+{% block page_class %}bg-mint{% endblock %}
+
+{% block content %}
+<div class="container container-md">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">📝 Wellbeing assessment</h1>
+      <p class="body-sm">{{ semester }}</p>
+    </div>
+  </div>
+
+  {% if result %}
+  <div class="card card-static accent-top-mint">
+    <div class="label mb-sm">Completed</div>
+    <p class="body-lg mb-md">
+      You completed this semester’s assessment. Your result:
+      <span class="badge badge-lg badge-{{ result.final_status|lower }}">{{ result.final_status }}</span>
+    </p>
+    <p class="body-sm mb-md">The assessment can be taken once per semester. A new one opens when the next semester starts.</p>
+    <div class="btn-row">
+      {% if status_url %}<a class="btn btn-accent" href="{{ status_url }}">View my status →</a>{% endif %}
+      <a class="btn btn-ghost btn-outlined" href="{% url 'student_dashboard' %}">Back to dashboard</a>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="card card-static accent-top-mint">
+    <div class="brand-face brand-face-lg mb-md">(●—●)</div>
+    <h2 class="display-md mb-sm">Hi, I’m Baymax.</h2>
+    <p class="body-lg mb-md">
+      I’ll ask you {{ question_count }} short questions about stress, anxiety and mood during this semester.
+      It takes about 5 minutes, there are no right or wrong answers, and you can go back and change an answer at any time.
+    </p>
+    <p class="body-sm mb-md">Your answers are used only to work out your wellbeing status and support you.</p>
+    {% if answered %}
+    <p class="body-sm mb-md"><strong>{{ answered }} of {{ question_count }}</strong> answered so far.</p>
+    {% endif %}
+    <div class="btn-row">
+      <a class="btn btn-accent" href="{% url 'chatbot_question' number=next_number %}">{% if answered %}Continue →{% else %}Start →{% endif %}</a>
+      <a class="btn btn-ghost btn-outlined" href="{% url 'student_dashboard' %}">Not now</a>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
