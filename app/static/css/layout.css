@@ -23,6 +23,7 @@
 .bg-gradient-soft { background: linear-gradient(180deg, var(--bg-warm) 0%, var(--bg-cream) 100%); }
 .bg-mint { background: var(--mint-light); }
 .bg-peach { background: var(--peach-light); }
+.bg-lavender-soft { background: linear-gradient(135deg, var(--lavender-light), var(--bg-warm)); }
 .bg-coral { background: var(--coral-light); }
 .bg-lavender { background: var(--lavender-light); }
 .bg-cream { background: var(--bg-cream); }

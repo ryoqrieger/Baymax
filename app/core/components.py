@@ -176,3 +176,34 @@ QUESTIONS = _build_questions()
 QUESTION_COUNT = len(QUESTIONS)          # 26
 SELF_HARM_COLUMN = 'phq9'                # any answer above 0 shows the support note
 STATUS_STABLE, STATUS_CHALLENGED, STATUS_CRITICAL = 'Stable', 'Challenged', 'Critical'
+
+
+# ── What each status means (shown on the status page and dashboard) ───────────
+# Built-in wording. It is the permanent fallback; the AI-written description
+# (Sprint 3) replaces `summary` on the status page when it is available.
+STATUS_CONTENT = {
+    STATUS_STABLE: {
+        'icon': '✅',
+        'headline': "You're doing well!",
+        'short': "You're managing stress well this semester.",
+        'summary': ('Your answers across the stress, anxiety and mood scales point to low levels of '
+                    'distress this semester.'),
+        'tip': 'Keep up the habits that work for you: regular sleep, movement, and time with people you trust.',
+    },
+    STATUS_CHALLENGED: {
+        'icon': '⚠️',
+        'headline': 'This semester is weighing on you',
+        'short': "You're carrying some stress. Support is available.",
+        'summary': ('Your answers point to a noticeable level of stress, worry or low mood. '
+                    'This is common among students, and it is worth paying attention to.'),
+        'tip': 'Small steps help: talk to someone you trust, plan short breaks, and consider joining a campus event or speaking with a counselor.',
+    },
+    STATUS_CRITICAL: {
+        'icon': '🆘',
+        'headline': 'Please reach out for support',
+        'short': 'Your answers suggest you are struggling. Please reach out.',
+        'summary': ('Your answers point to a high level of stress, anxiety or low mood. '
+                    'You do not have to handle this alone, and talking to a professional can really help.'),
+        'tip': 'We recommend requesting an appointment with a mental health professional as soon as you can.',
+    },
+}

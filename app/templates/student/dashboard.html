@@ -1,21 +1,81 @@
 {% extends "base.html" %}
-{% block title %}Student dashboard — Baymax{% endblock %}
+{% block title %}Dashboard — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="page-header">
     <div>
       <h1 class="display-lg">👋 Welcome, {{ user_name }}</h1>
-      <p class="body-sm">{{ role_label }}</p>
+      <p class="body-sm">{% if semester %}{{ semester }} semester{% else %}No semester is active right now{% endif %}</p>
     </div>
-    <span class="badge badge-lavender">Signed in</span>
+    {% if status %}<span class="badge badge-lg badge-{{ status|lower }}">{{ status_content.icon }} {{ status }}</span>{% endif %}
   </div>
 
-  <div class="card card-static accent-top-mint mw-sm">
-    <div class="label mb-sm">Coming soon</div>
-    <p class="body-lg">Your assessment, status and events will appear here. This page is a placeholder and will be built in Sprint 2.</p>
-    <div class="btn-row mt-md">
-      <a class="btn btn-sm btn-ghost btn-outlined" href="{{ password_url }}">Password settings</a>
+  <div class="grid-3">
+    <div class="card stat-card accent-top-mint">
+      <div class="stat-label">Current Status</div>
+      {% if status %}
+        <div class="stat-value status-text-{{ status|lower }}">{{ status }}</div>
+        <p class="stat-note">{{ status_content.short }}</p>
+        <a class="btn btn-sm btn-ghost btn-block stat-action" href="{% url 'student_status' %}">View Details →</a>
+      {% else %}
+        <div class="stat-value">Not assessed</div>
+        <p class="stat-note">Take the 26-question check-in to see your status.</p>
+        <a class="btn btn-sm btn-ghost btn-block stat-action" href="{% url 'chatbot' %}">Start Assessment →</a>
+      {% endif %}
+    </div>
+
+    <div class="card stat-card accent-top-lavender">
+      <div class="stat-label">Appointments</div>
+      {% if next_appointment %}
+        <div class="stat-value">{{ next_appointment|date:"D, j M" }}</div>
+        <p class="stat-note">Confirmed for {{ next_appointment|date:"g:i A" }}.{% if pending_count %} {{ pending_count }} more waiting for a reply.{% endif %}</p>
+      {% elif pending_count %}
+        <div class="stat-value">{{ pending_count }} Pending</div>
+        <p class="stat-note">Waiting for a professional to reply.</p>
+      {% elif accepted_count %}
+        <div class="stat-value">{{ accepted_count }} Accepted</div>
+        <p class="stat-note">Your professional will confirm the time.</p>
+      {% else %}
+        <div class="stat-value">No Pending</div>
+        <p class="stat-note">You have no active appointments.</p>
+      {% endif %}
+      {% if help_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ help_url }}">Request Help →</a>{% endif %}
+    </div>
+
+    <div class="card stat-card accent-top-peach">
+      <div class="stat-label">Upcoming Events</div>
+      {% if events %}
+        <div class="stat-value">{{ events|length }} Event{{ events|length|pluralize }}</div>
+        <p class="stat-note">{% for event in events %}{{ event.title }}{% if not forloop.last %}, {% endif %}{% endfor %}</p>
+      {% else %}
+        <div class="stat-value">None yet</div>
+        <p class="stat-note">No events are scheduled right now.</p>
+      {% endif %}
+      {% if events_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ events_url }}">View Events →</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="display-md section-title">Quick Actions</h2>
+    <div class="grid-2 mw-md">
+      <a class="card role-card action-card" href="{% url 'chatbot' %}">
+        <div class="action-icon action-icon-mint">📝</div>
+        <div>
+          <div class="display-md">{% if status %}Your Assessment{% else %}Take Assessment{% endif %}</div>
+          <p class="body-sm">{% if status %}See this semester’s check-in{% else %}Complete your 26-question check-in{% endif %}</p>
+        </div>
+      </a>
+      {% if help_url %}
+      <a class="card role-card action-card" href="{{ help_url }}">
+        <div class="action-icon action-icon-peach">🆘</div>
+        <div>
+          <div class="display-md">Request Help</div>
+          <p class="body-sm">Connect with a mental health professional</p>
+        </div>
+      </a>
+      {% endif %}
     </div>
   </div>
 </div>

@@ -6,11 +6,16 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
 
 from core import ml
+from django.contrib.auth.hashers import is_password_usable
+
 from core.components import (
     QUESTION_COLS,
     QUESTION_COUNT,
     QUESTIONS,
     ROLE_STUDENT,
+    SELF_HARM_COLUMN,
+    STATUS_CONTENT,
+    STATUS_CRITICAL,
 )
 from core.db import connect_db, get_current_semester
 from core.utils import safe_reverse
@@ -23,8 +28,129 @@ ASSESSMENT_KEY = 'assessment'   # session: {'semester': 'Fall 2026', 'answers': 
 
 @login_required_role(ROLE_STUDENT)
 def dashboard(request):
-    """Placeholder dashboard — replaced by the full dashboard in Sprint 2"""
-    return render(request, 'student/dashboard.html')
+    """Status summary, appointment badge and the next upcoming events."""
+    user_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            semester = get_current_semester(cur)
+
+            result = None
+            if semester:
+                cur.execute(
+                    "SELECT final_status FROM questionnaire_responses "
+                    "WHERE student_id = %s AND semester = %s",
+                    (user_id, semester),
+                )
+                result = cur.fetchone()
+
+            cur.execute(
+                "SELECT COUNT(*) FILTER (WHERE status = 'pending')  AS pending, "
+                "       COUNT(*) FILTER (WHERE status = 'accepted') AS accepted "
+                "FROM appointments WHERE student_id = %s",
+                (user_id,),
+            )
+            counts = cur.fetchone()
+
+            cur.execute(
+                "SELECT scheduled_at FROM appointments "
+                "WHERE student_id = %s AND status = 'accepted' AND scheduled_at >= NOW() "
+                "ORDER BY scheduled_at LIMIT 1",
+                (user_id,),
+            )
+            next_appointment = cur.fetchone()
+
+            cur.execute(
+                "SELECT id, title, date, time FROM events "
+                "WHERE date >= CURRENT_DATE ORDER BY date, time LIMIT 3"
+            )
+            events = cur.fetchall()
+    finally:
+        conn.close()
+
+    status = result['final_status'] if result else None
+    return render(request, 'student/dashboard.html', {
+        'semester': semester,
+        'status': status,
+        'status_content': STATUS_CONTENT.get(status),
+        'pending_count': counts['pending'],
+        'accepted_count': counts['accepted'],
+        'next_appointment': next_appointment['scheduled_at'] if next_appointment else None,
+        'events': events,
+        'help_url': safe_reverse('student_help'),
+        'events_url': safe_reverse('student_events'),
+    })
+
+
+@login_required_role(ROLE_STUDENT)
+def status(request):
+    """This semester's classification and description, plus earlier semesters."""
+    user_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            semester = get_current_semester(cur)
+            cur.execute(
+                f"SELECT semester, final_status, status_description, submitted_at, {SELF_HARM_COLUMN} "
+                "FROM questionnaire_responses WHERE student_id = %s ORDER BY submitted_at DESC",
+                (user_id,),
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    current = next((r for r in rows if r['semester'] == semester), None)
+    history = [r for r in rows if r is not current]
+
+    content = STATUS_CONTENT.get(current['final_status']) if current else None
+    description = None
+    if current:
+        description = current['status_description'] or content['summary']
+
+    # Support note: a Critical result, or any answer above 0 on the self-harm question.
+    needs_support_note = bool(current) and (
+        current['final_status'] == STATUS_CRITICAL or (current[SELF_HARM_COLUMN] or 0) > 0
+    )
+
+    return render(request, 'student/status.html', {
+        'semester': semester,
+        'current': current,
+        'content': content,
+        'description': description,
+        'is_ai_description': bool(current and current['status_description']),
+        'needs_support_note': needs_support_note,
+        'history': history,
+        'assessment_url': safe_reverse('chatbot'),
+        'help_url': safe_reverse('student_help'),
+    })
+
+
+@login_required_role(ROLE_STUDENT)
+def profile(request):
+    """Read-only account details."""
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT u.full_name, u.email, u.created_at, u.password, "
+                "       s.student_id, s.department "
+                "FROM users u JOIN students s ON s.user_id = u.id WHERE u.id = %s",
+                (request.session['user_id'],),
+            )
+            account = cur.fetchone()
+    finally:
+        conn.close()
+
+    if account is None:   # removed while signed in
+        request.session.flush()
+        return redirect('login')
+
+    has_password = is_password_usable(account['password'])
+    return render(request, 'student/profile.html', {
+        'account': account,
+        'sign_in_method': 'Email and password' if has_password else 'Google (no password set)',
+        'has_password': has_password,
+    })
 
 
 # ════════════════════════════════════════════════════════════════════

@@ -95,3 +95,30 @@
 .alert-card { border-left: 6px solid var(--coral); }
 .alert-card.alert-type-symptom_spike { border-left-color: var(--peach); }
 .alert-card.alert-type-department_at_risk { border-left-color: var(--lavender); }
+
+/* ── Quick-action cards (dashboard) ── */
+.action-card { display: flex; align-items: center; gap: var(--space-md); text-align: left; }
+.action-icon {
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.4rem;
+  border: var(--border-thin);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-small);
+}
+.action-icon-mint { background: var(--mint); }
+.action-icon-peach { background: var(--peach); }
+.action-icon-lavender { background: var(--lavender); }
+
+/* ── Read-only detail list (profile) ── */
+.detail-list { display: grid; grid-template-columns: max-content 1fr; gap: var(--space-sm) var(--space-lg); margin: 0; }
+.detail-list dt { font-family: var(--font-display); font-size: var(--fs-sm); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--grey-500); }
+.detail-list dd { margin: 0; font-weight: 500; overflow-wrap: anywhere; }
+@media (max-width: 640px) {
+  .detail-list { grid-template-columns: 1fr; gap: var(--space-2xs); }
+  .detail-list dd { margin-bottom: var(--space-sm); }
+}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Profile — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+
+{% block content %}
+<div class="container container-md">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">👤 My profile</h1>
+      <p class="body-sm">These details are read-only. Contact Admin IT to correct them.</p>
+    </div>
+  </div>
+
+  <div class="card card-static accent-top-lavender">
+    <dl class="detail-list">
+      <dt>Full name</dt><dd>{{ account.full_name }}</dd>
+      <dt>Email</dt><dd>{{ account.email }}</dd>
+      <dt>Student ID</dt><dd>{{ account.student_id }}</dd>
+      <dt>Department</dt><dd>{{ account.department }}</dd>
+      <dt>Member since</dt><dd>{{ account.created_at|date:"j F Y" }}</dd>
+      <dt>Sign-in method</dt><dd>{{ sign_in_method }}</dd>
+    </dl>
+    <div class="btn-row mt-lg">
+      <a class="btn btn-ghost btn-outlined btn-sm" href="{% url 'change_password' %}">{% if has_password %}Change password{% else %}Set a password{% endif %}</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

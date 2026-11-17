@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}My status — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">💚 My status</h1>
+      <p class="body-sm">{% if semester %}{{ semester }} semester{% else %}No semester is active right now{% endif %}</p>
+    </div>
+    <a class="btn btn-ghost btn-sm" href="{% url 'student_dashboard' %}">← Back to Dashboard</a>
+  </div>
+
+  {% if current %}
+  <div class="grid-2 items-start-grid">
+    <div class="card status-card status-{{ current.final_status|lower }}">
+      <div class="status-icon animate-float">{{ content.icon }}</div>
+      <span class="badge badge-lg badge-{{ current.final_status|lower }}">{{ current.final_status }}</span>
+      <h2 class="display-lg status-title">{{ content.headline }}</h2>
+      <p class="body-lg status-summary">Based on your answers to the 26 questions, submitted {{ current.submitted_at|date:"j M Y" }}.</p>
+    </div>
+
+    <div class="card card-static bg-lavender-soft">
+      <div class="insight-head">
+        <span aria-hidden="true">✨</span>
+        <span class="label">{% if is_ai_description %}Baymax AI Insight{% else %}What this means{% endif %}</span>
+      </div>
+      <p class="body-lg insight-text">{{ description }}</p>
+      <div class="recommendation">
+        <span class="body-sm fw-semibold">💡 Next step:</span>
+        <span class="body-sm">{{ content.tip }}</span>
+      </div>
+      {% if help_url and current.final_status != 'Stable' %}
+      <a class="btn btn-accent btn-sm mt-md" href="{{ help_url }}">Request professional help →</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if needs_support_note %}
+  <div class="emergency section" role="note">
+    <div class="status-icon" aria-hidden="true">🤝</div>
+    <div>
+      <div class="display-md">You are not alone</div>
+      <p class="body-sm">
+        If you are in immediate danger, or thinking about hurting yourself, please contact your local emergency services
+        or someone you trust right now.{% if help_url %} You can also <a class="underline fw-semibold" href="{{ help_url }}">request a professional here</a>.{% endif %}
+      </p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% else %}
+  <div class="card card-static accent-top-mint mw-sm">
+    <div class="label mb-sm">No result yet</div>
+    <p class="body-lg mb-md">You haven’t completed this semester’s assessment. It takes about 5 minutes.</p>
+    <a class="btn btn-accent" href="{{ assessment_url }}">Take the assessment →</a>
+  </div>
+  {% endif %}
+
+  {% if history %}
+  <div class="section section-end">
+    <h2 class="display-md section-title">Earlier semesters</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Semester</th><th>Status</th><th>Submitted</th></tr></thead>
+        <tbody>
+          {% for row in history %}
+          <tr>
+            <td>{{ row.semester }}</td>
+            <td><span class="badge badge-sm badge-{{ row.final_status|lower }}">{{ row.final_status }}</span></td>
+            <td>{{ row.submitted_at|date:"j M Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

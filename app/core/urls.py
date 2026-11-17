@@ -27,6 +27,8 @@ urlpatterns = [
     # ── Dashboards (placeholders until their sprint) ──
     path('student/dashboard/', student.dashboard, name='student_dashboard'),
     # ── Student portal ──
+    path('student/status/', student.status, name='student_status'),
+    path('student/profile/', student.profile, name='student_profile'),
     path('student/assessment/', student.chatbot, name='chatbot'),
     path('student/assessment/q/<int:number>/', student.chatbot_question, name='chatbot_question'),
 
