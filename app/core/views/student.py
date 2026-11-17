@@ -3,7 +3,7 @@ import logging
 
 from django.contrib import messages
 from django.shortcuts import redirect, render
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 
 from core import ml
 from django.contrib.auth.hashers import is_password_usable
@@ -13,6 +13,7 @@ from core.components import (
     QUESTION_COUNT,
     QUESTIONS,
     ROLE_STUDENT,
+    EVENT_BANNERS,
     SELF_HARM_COLUMN,
     STATUS_CONTENT,
     STATUS_CRITICAL,
@@ -338,3 +339,144 @@ def _finish(request, state):
     else:
         messages.info(request, 'You had already completed this semester’s assessment.')
     return redirect('chatbot')
+
+
+# ════════════════════════════════════════════════════════════════════
+#  HELP: request an appointment with a professional
+# ════════════════════════════════════════════════════════════════════
+
+@login_required_role(ROLE_STUDENT)
+def help_page(request):
+    user_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT u.id, u.full_name, p.specialization "
+                "FROM users u JOIN professionals p ON p.user_id = u.id "
+                "WHERE u.role = 'professional' AND u.is_active = TRUE "
+                "ORDER BY u.full_name"
+            )
+            professionals = cur.fetchall()
+
+            cur.execute(
+                "SELECT DISTINCT ON (professional_id) professional_id, status, scheduled_at "
+                "FROM appointments WHERE student_id = %s "
+                "ORDER BY professional_id, created_at DESC, id DESC",
+                (user_id,),
+            )
+            latest = {row['professional_id']: row for row in cur.fetchall()}
+    finally:
+        conn.close()
+
+    for pro in professionals:
+        last = latest.get(pro['id'])
+        pro['last_status'] = last['status'] if last else None
+        pro['scheduled_at'] = last['scheduled_at'] if last else None
+        pro['can_request'] = pro['last_status'] not in ('pending', 'accepted')
+
+    return render(request, 'student/help.html', {'professionals': professionals})
+
+
+@login_required_role(ROLE_STUDENT)
+@require_POST
+def help_request(request, professional_id):
+    user_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT u.full_name FROM users u JOIN professionals p ON p.user_id = u.id "
+                "WHERE u.id = %s AND u.role = 'professional' AND u.is_active = TRUE",
+                (professional_id,),
+            )
+            pro = cur.fetchone()
+            if pro is None:
+                messages.error(request, 'That professional is not available.')
+                return redirect('student_help')
+
+            # One open (pending or accepted) request per professional, checked inside the INSERT itself.
+            cur.execute(
+                "INSERT INTO appointments (student_id, professional_id, status, is_new) "
+                "SELECT %s, %s, 'pending', TRUE WHERE NOT EXISTS ("
+                "  SELECT 1 FROM appointments "
+                "  WHERE student_id = %s AND professional_id = %s AND status IN ('pending', 'accepted')"
+                ") RETURNING id",
+                (user_id, professional_id, user_id, professional_id),
+            )
+            created = cur.fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+
+    if created:
+        messages.success(request, f"Your request was sent to {pro['full_name']}. You will see the reply on your dashboard.")
+    else:
+        messages.info(request, f"You already have an open request with {pro['full_name']}.")
+    return redirect('student_help')
+
+
+# ════════════════════════════════════════════════════════════════════
+#  EVENTS: upcoming only, RSVP toggle
+# ════════════════════════════════════════════════════════════════════
+
+@login_required_role(ROLE_STUDENT)
+def events_page(request):
+    user_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT e.id, e.title, e.date, e.time, e.venue, e.description, e.rsvp_count, "
+                "       (r.id IS NOT NULL) AS going "
+                "FROM events e LEFT JOIN event_rsvps r ON r.event_id = e.id AND r.student_id = %s "
+                "WHERE e.date >= CURRENT_DATE ORDER BY e.date, e.time",
+                (user_id,),
+            )
+            events = cur.fetchall()
+    finally:
+        conn.close()
+
+    for index, event in enumerate(events):
+        event['banner'] = EVENT_BANNERS[index % len(EVENT_BANNERS)]
+    return render(request, 'student/events.html', {'events': events})
+
+
+@login_required_role(ROLE_STUDENT)
+@require_POST
+def event_rsvp(request, event_id):
+    """Toggle this student's RSVP. The count changes in the same transaction."""
+    user_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT title FROM events WHERE id = %s AND date >= CURRENT_DATE FOR UPDATE",
+                (event_id,),
+            )
+            event = cur.fetchone()
+            if event is None:
+                conn.rollback()
+                messages.error(request, 'That event is no longer open for RSVPs.')
+                return redirect('student_events')
+
+            cur.execute(
+                "DELETE FROM event_rsvps WHERE student_id = %s AND event_id = %s RETURNING id",
+                (user_id, event_id),
+            )
+            if cur.fetchone():
+                cur.execute("UPDATE events SET rsvp_count = GREATEST(rsvp_count - 1, 0) WHERE id = %s", (event_id,))
+                message = f"Your RSVP for “{event['title']}” was cancelled."
+            else:
+                cur.execute(
+                    "INSERT INTO event_rsvps (student_id, event_id) VALUES (%s, %s) RETURNING id",
+                    (user_id, event_id),
+                )
+                cur.execute("UPDATE events SET rsvp_count = rsvp_count + 1 WHERE id = %s", (event_id,))
+                message = f"You’re going to “{event['title']}”."
+        conn.commit()
+    finally:
+        conn.close()
+
+    messages.success(request, message)
+    return redirect('student_events')

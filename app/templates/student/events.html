@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Events — Baymax{% endblock %}
+{% block page_class %}bg-peach{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">📅 Upcoming Events</h1>
+      <p class="body-sm">Workshops, sessions and group activities. Only events that have not happened yet are shown.</p>
+    </div>
+  </div>
+
+  {% if events %}
+  <div class="grid-3 section-end">
+    {% for event in events %}
+    <div class="event-card">
+      <div class="event-banner event-banner-{{ event.banner.0 }}" aria-hidden="true">{{ event.banner.1 }}</div>
+      <div class="event-body">
+        {% if event.going %}<span class="badge badge-active badge-sm self-start">✓ You’re going</span>{% endif %}
+        <h2 class="display-md">{{ event.title }}</h2>
+        {% if event.description %}<p class="body-sm">{{ event.description }}</p>{% endif %}
+        <div class="event-meta">
+          <p class="body-sm fw-semibold">📅 {{ event.date|date:"D, j M Y" }} • {{ event.time|time:"g:i A" }}</p>
+          <p class="body-sm">📍 {{ event.venue }}</p>
+          <p class="body-sm">👥 {{ event.rsvp_count }} going</p>
+        </div>
+        <form method="post" action="{% url 'student_event_rsvp' event_id=event.id %}">
+          {% csrf_token %}
+          {% if event.going %}
+          <button class="btn btn-sm btn-ghost btn-outlined btn-block" type="submit">Cancel RSVP</button>
+          {% else %}
+          <button class="btn btn-sm btn-accent btn-block" type="submit">RSVP</button>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="card card-static accent-top-peach mw-sm">
+    <div class="label mb-sm">Nothing scheduled</div>
+    <p class="body-lg">There are no upcoming events right now. Please check back soon.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -27,6 +27,10 @@ urlpatterns = [
     # ── Dashboards (placeholders until their sprint) ──
     path('student/dashboard/', student.dashboard, name='student_dashboard'),
     # ── Student portal ──
+    path('student/help/', student.help_page, name='student_help'),
+    path('student/help/request/<int:professional_id>/', student.help_request, name='student_help_request'),
+    path('student/events/', student.events_page, name='student_events'),
+    path('student/events/<int:event_id>/rsvp/', student.event_rsvp, name='student_event_rsvp'),
     path('student/status/', student.status, name='student_status'),
     path('student/profile/', student.profile, name='student_profile'),
     path('student/assessment/', student.chatbot, name='chatbot'),

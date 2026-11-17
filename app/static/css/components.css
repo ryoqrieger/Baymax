@@ -329,3 +329,10 @@ progress.progress::-moz-progress-bar { background: linear-gradient(90deg, var(--
   box-shadow: var(--shadow-hard);
   transform: rotate(-1deg);
 }
+
+/* ── Event banner colours ── */
+.event-banner-mint { background: var(--mint-light); }
+.event-banner-peach { background: var(--peach-light); }
+.event-banner-lavender { background: var(--lavender-light); }
+.event-banner-coral { background: var(--coral-light); }
+.event-meta { margin-top: auto; padding-top: var(--space-xs); }

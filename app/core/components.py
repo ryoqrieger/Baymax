@@ -207,3 +207,11 @@ STATUS_CONTENT = {
         'tip': 'We recommend requesting an appointment with a mental health professional as soon as you can.',
     },
 }
+
+# Banner colour + emoji cycled across the event cards.
+EVENT_BANNERS = (
+    ('mint', '🧘'),
+    ('peach', '🌿'),
+    ('lavender', '💬'),
+    ('coral', '🎨'),
+)
