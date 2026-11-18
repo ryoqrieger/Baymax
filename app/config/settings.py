@@ -213,6 +213,7 @@ if not DEBUG:
 
 # ── LLM (Groq, via its OpenAI-compatible endpoint) ────────────────────────────
 GROQ_API_KEY = _get('GROQ_API_KEY')
+GROQ_BASE_URL = _get('GROQ_BASE_URL')
 GROQ_MODEL = _get('GROQ_MODEL')
 GROQ_TIMEOUT = _get_int('GROQ_TIMEOUT')
 

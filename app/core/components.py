@@ -219,3 +219,8 @@ EVENT_BANNERS = (
 # ── Analytics thresholds (used by the AI alert strategies and, in Sprint 5, the AnalyticsAgent) ──
 CRITICAL_SURGE_PCT = 40          # Critical share of respondents above this -> Critical Surge alert
 DEPARTMENT_AT_RISK_PCT = 60      # Challenged + Critical share of a department above this -> Department at Risk
+
+# ── LLM call settings ─────────────────────────────────────────────────────────
+# Groq's gpt-oss models spend part of the token limit on hidden "reasoning".
+# Each call is given this much extra room so the visible answer is not cut off.
+LLM_REASONING_HEADROOM_TOKENS = 500
