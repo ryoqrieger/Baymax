@@ -6,6 +6,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from core import ml
+from core.agents.triage_agent import TriageAgent
 from django.contrib.auth.hashers import is_password_usable
 
 from core.components import (
@@ -17,6 +18,7 @@ from core.components import (
     SELF_HARM_COLUMN,
     STATUS_CONTENT,
     STATUS_CRITICAL,
+    STATUS_STABLE,
 )
 from core.db import connect_db, get_current_semester
 from core.utils import safe_reverse
@@ -87,12 +89,13 @@ def dashboard(request):
 def status(request):
     """This semester's classification and description, plus earlier semesters."""
     user_id = request.session['user_id']
+    answer_columns = ', '.join(QUESTION_COLS)    # constant column names, never user input
     conn = connect_db()
     try:
         with conn.cursor() as cur:
             semester = get_current_semester(cur)
             cur.execute(
-                f"SELECT semester, final_status, status_description, submitted_at, {SELF_HARM_COLUMN} "
+                f"SELECT semester, final_status, status_description, submitted_at, {answer_columns} "
                 "FROM questionnaire_responses WHERE student_id = %s ORDER BY submitted_at DESC",
                 (user_id,),
             )
@@ -104,9 +107,19 @@ def status(request):
     history = [r for r in rows if r is not current]
 
     content = STATUS_CONTENT.get(current['final_status']) if current else None
-    description = None
+    description, is_ai_description, recommended = None, False, None
     if current:
-        description = current['status_description'] or content['summary']
+        agent = TriageAgent()
+        if current['status_description']:
+            description, is_ai_description = current['status_description'], True
+        else:
+            # First visit: the TriageAgent asks the AI once and saves the answer.
+            # If the AI is unavailable, the built-in text is shown and we try again later.
+            answers = {column: current[column] for column in QUESTION_COLS}
+            result = agent.describe(user_id, semester, current['final_status'], answers)
+            description, is_ai_description = result.text, result.from_ai
+        if current['final_status'] != STATUS_STABLE:
+            recommended = agent.recommend_professional(user_id)
 
     # Support note: a Critical result, or any answer above 0 on the self-harm question.
     needs_support_note = bool(current) and (
@@ -118,7 +131,8 @@ def status(request):
         'current': current,
         'content': content,
         'description': description,
-        'is_ai_description': bool(current and current['status_description']),
+        'is_ai_description': is_ai_description,
+        'recommended': recommended,
         'needs_support_note': needs_support_note,
         'history': history,
         'assessment_url': safe_reverse('chatbot'),
@@ -351,6 +365,13 @@ def help_page(request):
     conn = connect_db()
     try:
         with conn.cursor() as cur:
+            semester = get_current_semester(cur)
+            cur.execute(
+                "SELECT final_status FROM questionnaire_responses WHERE student_id = %s AND semester = %s",
+                (user_id, semester),
+            )
+            result = cur.fetchone()
+
             cur.execute(
                 "SELECT u.id, u.full_name, p.specialization "
                 "FROM users u JOIN professionals p ON p.user_id = u.id "
@@ -369,7 +390,14 @@ def help_page(request):
     finally:
         conn.close()
 
+    # Challenged / Critical students get one professional highlighted as "Recommended".
+    recommended = None
+    if result and result['final_status'] != STATUS_STABLE:
+        recommended = TriageAgent.recommend_professional(user_id)
+    recommended_id = recommended['id'] if recommended else None
+
     for pro in professionals:
+        pro['recommended'] = pro['id'] == recommended_id
         last = latest.get(pro['id'])
         pro['last_status'] = last['status'] if last else None
         pro['scheduled_at'] = last['scheduled_at'] if last else None

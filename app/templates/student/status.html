@@ -31,8 +31,18 @@
         <span class="body-sm fw-semibold">💡 Next step:</span>
         <span class="body-sm">{{ content.tip }}</span>
       </div>
+      {% if recommended %}
+      <div class="recommendation">
+        <span class="body-sm fw-semibold">🧑‍⚕️ Recommended for you:</span>
+        <span class="body-sm">{{ recommended.full_name }} · {{ recommended.specialization }}</span>
+        <form class="mt-sm" method="post" action="{% url 'student_help_request' professional_id=recommended.id %}">
+          {% csrf_token %}
+          <button class="btn btn-accent btn-sm" type="submit">Request appointment</button>
+        </form>
+      </div>
+      {% endif %}
       {% if help_url and current.final_status != 'Stable' %}
-      <a class="btn btn-accent btn-sm mt-md" href="{{ help_url }}">Request professional help →</a>
+      <a class="btn btn-ghost btn-outlined btn-sm mt-md" href="{{ help_url }}">See all professionals →</a>
       {% endif %}
     </div>
   </div>

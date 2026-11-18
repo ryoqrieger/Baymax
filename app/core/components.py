@@ -224,3 +224,40 @@ DEPARTMENT_AT_RISK_PCT = 60      # Challenged + Critical share of a department a
 # Groq's gpt-oss models spend part of the token limit on hidden "reasoning".
 # Each call is given this much extra room so the visible answer is not cut off.
 LLM_REASONING_HEADROOM_TOKENS = 500
+
+# ── AI status description (TriageAgent) ───────────────────────────────────────
+TRIAGE_RETRY_SECONDS = 5 * 60    # after an AI failure, wait this long before asking again
+
+# Standard score bands, highest lower-bound first: (minimum total, wording).
+# PSS-10 total 0-40 (items 5-8 are positively worded, so they are reversed: 4 - answer).
+PSS_REVERSED_COLUMNS = ('pss5', 'pss6', 'pss7', 'pss8')
+PSS_BANDS = ((27, 'high'), (14, 'moderate'), (0, 'low'))
+GAD_BANDS = ((15, 'severe'), (10, 'moderate'), (5, 'mild'), (0, 'minimal'))     # total 0-21
+PHQ_BANDS = ((20, 'severe'), (15, 'moderately severe'), (10, 'moderate'), (5, 'mild'), (0, 'minimal'))  # 0-27
+
+# Short, neutral names for the answers that can "stand out" (never the self-harm item,
+# never the positively worded PSS items). Used only to tell the AI what weighs most.
+SYMPTOM_LABELS = {
+    'pss1': 'being upset by events in academic affairs',
+    'pss2': 'feeling unable to control important academic matters',
+    'pss3': 'nervousness and stress from academic pressure',
+    'pss4': 'feeling unable to cope with academic activities',
+    'pss9': 'anger over grades or performance',
+    'pss10': 'academic difficulties piling up',
+    'gad1': 'feeling nervous or on edge',
+    'gad2': 'not being able to stop worrying',
+    'gad3': 'trouble relaxing',
+    'gad4': 'irritability',
+    'gad5': 'worrying too much about academics',
+    'gad6': 'restlessness',
+    'gad7': 'fear that something awful might happen',
+    'phq1': 'little interest or pleasure in things',
+    'phq2': 'feeling down or hopeless',
+    'phq3': 'trouble sleeping',
+    'phq4': 'tiredness or low energy',
+    'phq5': 'changes in appetite',
+    'phq6': 'feeling bad about yourself',
+    'phq7': 'trouble concentrating',
+    'phq8': 'restlessness or slowed movement',
+}
+TOP_AREAS_MAX = 3

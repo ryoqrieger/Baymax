@@ -25,6 +25,7 @@
     <div class="grid-3">
       {% for pro in professionals %}
       <div class="card card-static contact-card accent-top-lavender">
+        {% if pro.recommended %}<span class="badge badge-active badge-sm self-start">⭐ Recommended for you</span>{% endif %}
         <div class="display-md">{{ pro.full_name }}</div>
         <p class="body-sm">{{ pro.specialization }}</p>
 
