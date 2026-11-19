@@ -261,3 +261,23 @@ SYMPTOM_LABELS = {
     'phq8': 'restlessness or slowed movement',
 }
 TOP_AREAS_MAX = 3
+
+# ── Professional portal ───────────────────────────────────────────────────────
+PAGE_SIZE = 10                    # rows per page on every list
+PAGE_WINDOW = 2                   # page numbers shown each side of the current page
+
+# Appointment list tabs: key -> (label, SQL status values it contains)
+APPOINTMENT_TABS = {
+    'pending': ('Pending', ('pending',)),
+    'active': ('Active', ('accepted',)),
+    'completed': ('Completed', ('completed', 'declined')),
+}
+DEFAULT_APPOINTMENT_TAB = 'pending'
+
+# How an appointment status looks in a table: status -> (label, badge class)
+APPOINTMENT_STATUS_BADGES = {
+    'pending': ('Pending', 'badge-pending'),
+    'accepted': ('Accepted', 'badge-active'),
+    'completed': ('Completed', 'badge-lavender'),
+    'declined': ('Declined', 'badge-muted'),
+}

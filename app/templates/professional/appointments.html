@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Appointments — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">📅 Appointments</h1>
+      <p class="body-sm">Requests from students who chose you</p>
+    </div>
+  </div>
+
+  <div class="btn-row mb-md">
+    {% for t in tabs %}
+    <a class="filter-chip{% if t.active %} active{% endif %}" href="?tab={{ t.key }}">{{ t.label }} ({{ t.count }})</a>
+    {% endfor %}
+  </div>
+
+  {% include "partials/appointment_table.html" with show_when=show_when empty_text="Nothing in this tab." %}
+
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

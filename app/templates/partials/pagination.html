@@ -1,0 +1,12 @@
+{# Page links. Needs: page, total_pages, page_numbers, page_query (e.g. "tab=pending"), total_rows. #}
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="Pages">
+  <a class="page-link{% if page <= 1 %} disabled{% endif %}" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page|add:'-1' }}" aria-label="Previous page">←</a>
+  {% for number in page_numbers %}
+    {% if number is None %}<span class="page-gap" aria-hidden="true">…</span>
+    {% else %}<a class="page-link{% if number == page %} active{% endif %}" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ number }}"{% if number == page %} aria-current="page"{% endif %}>{{ number }}</a>{% endif %}
+  {% endfor %}
+  <a class="page-link{% if page >= total_pages %} disabled{% endif %}" href="?{% if page_query %}{{ page_query }}&amp;{% endif %}page={{ page|add:'1' }}" aria-label="Next page">→</a>
+</nav>
+<p class="body-sm pagination-info">Page {{ page }} of {{ total_pages }} · {{ total_rows }} total</p>
+{% endif %}

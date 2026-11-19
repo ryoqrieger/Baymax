@@ -32,7 +32,7 @@
 
       <div class="nav-links">
         {% for item in nav_items %}
-          <a class="nav-link{% if item.active %} active{% endif %}" href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}</a>
+          <a class="nav-link{% if item.active %} active{% endif %}" href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{{ item.label }}{% if item.badge %}<span class="nav-badge" title="{{ item.badge }} new request{{ item.badge|pluralize }}">{{ item.badge }}</span>{% endif %}</a>
         {% endfor %}
 
         {% if role %}

@@ -1,22 +1,46 @@
 {% extends "base.html" %}
-{% block title %}Professional dashboard — Baymax{% endblock %}
+{% block title %}Dashboard — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="page-header">
     <div>
       <h1 class="display-lg">🧠 Welcome, {{ user_name }}</h1>
-      <p class="body-sm">{{ role_label }}</p>
+      <p class="body-sm">{% if specialization %}{{ specialization }}{% else %}{{ role_label }}{% endif %}</p>
     </div>
-    <span class="badge badge-lavender">Signed in</span>
+    {% if counts.new_requests %}<span class="badge badge-pending animate-pulse">{{ counts.new_requests }} new request{{ counts.new_requests|pluralize }}</span>{% endif %}
   </div>
 
-  <div class="card card-static accent-top-lavender mw-sm">
-    <div class="label mb-sm">Coming soon</div>
-    <p class="body-lg">Your appointment requests and student cases will appear here. This page is a placeholder and will be built in Sprint 4.</p>
-    <div class="btn-row mt-md">
-      <a class="btn btn-sm btn-ghost btn-outlined" href="{{ password_url }}">Change password</a>
+  <div class="grid-3">
+    <div class="card stat-card accent-top-peach">
+      <div class="stat-label">Pending Requests</div>
+      <div class="stat-value">{{ counts.pending }}</div>
+      <p class="stat-note">{% if counts.new_requests %}{{ counts.new_requests }} not opened yet.{% else %}Students waiting for your reply.{% endif %}</p>
+      {% if appointments_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ appointments_url }}?tab=pending">Review requests →</a>{% endif %}
     </div>
+    <div class="card stat-card accent-top-mint">
+      <div class="stat-label">Active Students</div>
+      <div class="stat-value">{{ counts.active }}</div>
+      <p class="stat-note">Accepted and still in your care.</p>
+      {% if appointments_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ appointments_url }}?tab=active">View active →</a>{% endif %}
+    </div>
+    <div class="card stat-card accent-top-lavender">
+      <div class="stat-label">Completed</div>
+      <div class="stat-value">{{ counts.completed }}</div>
+      <p class="stat-note">Released this semester.</p>
+      {% if appointments_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ appointments_url }}?tab=completed">View history →</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="display-md section-title">Upcoming Schedule</h2>
+    {% include "partials/appointment_table.html" with rows=upcoming show_when=True empty_text="No upcoming appointments. Accepted requests with a future time appear here." %}
+  </div>
+
+  <div class="section section-end">
+    <h2 class="display-md section-title">Recent Requests</h2>
+    {% include "partials/appointment_table.html" with rows=recent empty_text="No pending requests right now." %}
   </div>
 </div>
 {% endblock %}
