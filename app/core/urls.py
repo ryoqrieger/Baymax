@@ -38,6 +38,7 @@ urlpatterns = [
 
     path('professional/dashboard/', professional.dashboard, name='professional_dashboard'),
     path('professional/appointments/', professional.appointments, name='professional_appointments'),
+    path('professional/stats/', professional.stats, name='professional_stats'),
     path('professional/appointments/<int:appointment_id>/', professional.appointment_detail, name='professional_appointment'),
     path('professional/appointments/<int:appointment_id>/accept/', professional.appointment_accept, name='professional_appointment_accept'),
     path('professional/appointments/<int:appointment_id>/decline/', professional.appointment_decline, name='professional_appointment_decline'),

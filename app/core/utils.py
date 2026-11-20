@@ -180,3 +180,8 @@ def answer_groups(answers: dict) -> list:
             'flagged': question['column'] == SELF_HARM_COLUMN and value > 0,
         })
     return list(groups.values())
+
+
+def percent(part, whole) -> int:
+    """part as a whole-number percentage of whole (0 when whole is 0)."""
+    return round(part * 100 / whole) if whole else 0

@@ -9,18 +9,25 @@ from django.views.decorators.http import require_POST
 from core.components import (
     APPOINTMENT_MAX_DAYS_AHEAD,
     APPOINTMENT_SLOT_MINUTES,
+    ALERT_TYPE_LABELS,
     APPOINTMENT_STATUS_BADGES,
     APPOINTMENT_TABS,
     DEFAULT_APPOINTMENT_TAB,
     DATETIME_INPUT_FORMAT,
+    DEPARTMENT_AT_RISK_PCT,
     PAGE_SIZE,
     QUESTION_COLS,
     ROLE_PROFESSIONAL,
+    QUESTIONS,
+    SELF_HARM_COLUMN,
+    STATS_TOP_SYMPTOMS,
     STATUS_CONTENT,
+    SYMPTOM_LABELS,
 )
 from core.db import connect_db, get_current_semester
 from core.utils import (
-    answer_groups, get_page_range, parse_page, safe_reverse, scale_scores, total_pages_for,
+    answer_groups, get_page_range, parse_page, percent, safe_reverse, scale_scores,
+    total_pages_for,
 )
 from core.views.auth import login_required_role
 
@@ -320,3 +327,113 @@ def appointment_decline(request, appointment_id):
 @require_POST
 def appointment_release(request, appointment_id):
     return _change_status(request, appointment_id, 'accepted', 'completed', '{name} has been released and moved to Completed.')
+
+
+# ════════════════════════════════════════════════════════════════════
+#  CAMPUS STATS (anonymous, campus-wide, one semester at a time)
+# ════════════════════════════════════════════════════════════════════
+
+def _symptom_thresholds():
+    """column -> the lowest answer that counts as "halfway up the scale" (e.g. 2 on a 0-4 or 0-3 scale)."""
+    thresholds = {}
+    for question in QUESTIONS:
+        column = question['column']
+        if column in SYMPTOM_LABELS:
+            top = max(question['valid_values'])
+            thresholds[column] = min(v for v in question['valid_values'] if v / top >= 0.5)
+    return thresholds
+
+
+@login_required_role(ROLE_PROFESSIONAL)
+def stats(request):
+    thresholds = _symptom_thresholds()
+    # Column names and thresholds are constants from components.py, never user input.
+    symptom_sql = ', '.join(f'COUNT(*) FILTER (WHERE {c} >= {t}) AS {c}' for c, t in thresholds.items())
+
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            current = get_current_semester(cur)
+            cur.execute(
+                "SELECT semester FROM semester_schedule "
+                "WHERE is_current OR semester IN (SELECT DISTINCT semester FROM questionnaire_responses) "
+                "ORDER BY start_date DESC"
+            )
+            semesters = [row['semester'] for row in cur.fetchall()]
+
+            chosen = request.GET.get('semester')
+            semester = chosen if chosen in semesters else (current or (semesters[0] if semesters else None))
+
+            totals = departments = alerts = None
+            symptoms, self_harm_count = [], 0
+            if semester:
+                cur.execute(
+                    "SELECT COUNT(*) AS total, "
+                    "  COUNT(*) FILTER (WHERE final_status = 'Stable')     AS stable, "
+                    "  COUNT(*) FILTER (WHERE final_status = 'Challenged') AS challenged, "
+                    "  COUNT(*) FILTER (WHERE final_status = 'Critical')   AS critical "
+                    "FROM questionnaire_responses WHERE semester = %s",
+                    (semester,),
+                )
+                totals = cur.fetchone()
+
+                cur.execute(
+                    "SELECT s.department, COUNT(*) AS total, "
+                    "  COUNT(*) FILTER (WHERE q.final_status = 'Stable')     AS stable, "
+                    "  COUNT(*) FILTER (WHERE q.final_status = 'Challenged') AS challenged, "
+                    "  COUNT(*) FILTER (WHERE q.final_status = 'Critical')   AS critical "
+                    "FROM questionnaire_responses q JOIN students s ON s.user_id = q.student_id "
+                    "WHERE q.semester = %s GROUP BY s.department ORDER BY s.department",
+                    (semester,),
+                )
+                departments = cur.fetchall()
+
+                # One query for every symptom: how many students answered at/above halfway.
+                cur.execute(
+                    f"SELECT {symptom_sql}, COUNT(*) FILTER (WHERE {SELF_HARM_COLUMN} > 0) AS self_harm "
+                    "FROM questionnaire_responses WHERE semester = %s",
+                    (semester,),
+                )
+                counts = cur.fetchone()
+                self_harm_count = counts.pop('self_harm')
+                symptoms = sorted(
+                    ({'label': SYMPTOM_LABELS[c], 'count': n, 'pct': percent(n, totals['total'])}
+                     for c, n in counts.items() if n),
+                    key=lambda item: (-item['count'], item['label']),
+                )[:STATS_TOP_SYMPTOMS]
+
+                cur.execute(
+                    "SELECT alert_type, message, department, dismissed, created_at "
+                    "FROM analytics_alerts WHERE semester = %s ORDER BY created_at DESC",
+                    (semester,),
+                )
+                alerts = cur.fetchall()
+    finally:
+        conn.close()
+
+    total = totals['total'] if totals else 0
+    split = []
+    if totals:
+        for key, label, fill in (('stable', 'Stable', 'fill-mint'), ('challenged', 'Challenged', 'fill-peach'),
+                                 ('critical', 'Critical', 'fill-coral')):
+            split.append({'label': label, 'count': totals[key], 'pct': percent(totals[key], total),
+                          'fill': fill, 'badge': f'badge-{key}'})
+    for row in departments or []:
+        row['at_risk_pct'] = percent(row['challenged'] + row['critical'], row['total'])
+        row['is_at_risk'] = row['at_risk_pct'] > DEPARTMENT_AT_RISK_PCT
+    for alert in alerts or []:
+        alert['icon'], alert['heading'] = ALERT_TYPE_LABELS.get(alert['alert_type'], ('🔔', 'Alert'))
+
+    return render(request, 'professional/stats.html', {
+        'semester': semester,
+        'is_current': semester == current,
+        'semesters': [{'name': name, 'active': name == semester} for name in semesters],
+        'total': total,
+        'split': split,
+        'departments': departments or [],
+        'symptoms': symptoms,
+        'self_harm_count': self_harm_count,
+        'self_harm_pct': percent(self_harm_count, total),
+        'alerts': alerts or [],
+        'at_risk_threshold': DEPARTMENT_AT_RISK_PCT,
+    })

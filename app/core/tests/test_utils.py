@@ -57,3 +57,12 @@ class ScoringHelperTests(SimpleTestCase):
         self.assertEqual([len(g['items']) for g in groups], [10, 7, 9])
         self.assertTrue(groups[2]['items'][-1]['flagged'])
         self.assertFalse(any(i['flagged'] for i in answer_groups(self._answers(1, 1, 0))[2]['items']))
+
+
+class PercentTests(SimpleTestCase):
+    def test_percent(self):
+        from core.utils import percent
+        self.assertEqual(percent(1, 3), 33)
+        self.assertEqual(percent(2, 3), 67)
+        self.assertEqual(percent(5, 0), 0)
+        self.assertEqual(percent(4, 4), 100)
