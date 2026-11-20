@@ -38,6 +38,10 @@ urlpatterns = [
 
     path('professional/dashboard/', professional.dashboard, name='professional_dashboard'),
     path('professional/appointments/', professional.appointments, name='professional_appointments'),
+    path('professional/appointments/<int:appointment_id>/', professional.appointment_detail, name='professional_appointment'),
+    path('professional/appointments/<int:appointment_id>/accept/', professional.appointment_accept, name='professional_appointment_accept'),
+    path('professional/appointments/<int:appointment_id>/decline/', professional.appointment_decline, name='professional_appointment_decline'),
+    path('professional/appointments/<int:appointment_id>/release/', professional.appointment_release, name='professional_appointment_release'),
     path('authority/dashboard/', authority.dashboard, name='authority_dashboard'),
     path('admin/dashboard/', admin.dashboard, name='admin_dashboard'),
 ]

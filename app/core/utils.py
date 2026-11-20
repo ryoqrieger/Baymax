@@ -9,6 +9,14 @@ from django.urls import NoReverseMatch, reverse
 from core.db import connect_db
 
 from core.components import (
+    GAD_BANDS,
+    PHQ_BANDS,
+    PSS_BANDS,
+    PSS_REVERSED_COLUMNS,
+    QUESTIONS,
+    SCALE_MAX_SCORES,
+    SCALE_TITLES,
+    SELF_HARM_COLUMN,
     PAGE_SIZE,
     PAGE_WINDOW,
     ROLE_DASHBOARD,
@@ -128,3 +136,47 @@ def nav_context(request):
         'password_url': safe_reverse('change_password'),
         'current_year': date.today().year,
     }
+
+
+# ── Assessment scoring (shared by the AI layer and the professional portal) ──
+
+def band_word(total: int, bands) -> str:
+    """The level word for a scale total, e.g. band_word(12, GAD_BANDS) -> 'moderate'."""
+    for minimum, word in bands:
+        if total >= minimum:
+            return word
+    return bands[-1][1]
+
+
+def scale_scores(answers: dict) -> list:
+    """Totals and level words for the three scales (PSS items 5-8 are reverse-scored)."""
+    pss = sum((4 - answers[c]) if c in PSS_REVERSED_COLUMNS else answers[c]
+              for c in answers if c.startswith('pss'))
+    gad = sum(answers[c] for c in answers if c.startswith('gad'))
+    phq = sum(answers[c] for c in answers if c.startswith('phq'))
+    rows = []
+    for scale, total, bands in (('PSS-10', pss, PSS_BANDS), ('GAD-7', gad, GAD_BANDS), ('PHQ-9', phq, PHQ_BANDS)):
+        rows.append({
+            'scale': scale,
+            'title': SCALE_TITLES[scale],
+            'total': total,
+            'max': SCALE_MAX_SCORES[scale],
+            'level': band_word(total, bands),
+        })
+    return rows
+
+
+def answer_groups(answers: dict) -> list:
+    """All 26 answers grouped by scale: [{'title', 'items': [{number, text, answer, flagged}]}]."""
+    groups = {}
+    for question in QUESTIONS:
+        value = answers[question['column']]
+        label = next(text for number, text in question['options'] if number == value)
+        group = groups.setdefault(question['scale'], {'title': f"{question['scale_title']} ({question['scale']})", 'items': []})
+        group['items'].append({
+            'number': question['number'],
+            'text': question['text'],
+            'answer': label,
+            'flagged': question['column'] == SELF_HARM_COLUMN and value > 0,
+        })
+    return list(groups.values())

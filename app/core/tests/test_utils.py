@@ -27,3 +27,33 @@ class PaginationTests(SimpleTestCase):
         for raw, expected in [('3', 3), ('abc', 1), ('0', 1), ('-4', 1), ('', 1), ('2.5', 1)]:
             self.assertEqual(parse_page(rf.get('/', {'page': raw})), expected, raw)
         self.assertEqual(parse_page(rf.get('/')), 1)
+
+
+class ScoringHelperTests(SimpleTestCase):
+    def _answers(self, pss, gad, phq):
+        from core.components import QUESTION_COLS
+        out = {}
+        for column in QUESTION_COLS:
+            out[column] = pss if column.startswith('pss') else gad if column.startswith('gad') else phq
+        return out
+
+    def test_scores_and_reverse_items(self):
+        from core.utils import scale_scores
+        scores = {s['scale']: s for s in scale_scores(self._answers(0, 0, 0))}
+        self.assertEqual(scores['PSS-10']['total'], 16)       # four reversed items give 4 each
+        self.assertEqual(scores['PSS-10']['level'], 'moderate')
+        self.assertEqual((scores['GAD-7']['total'], scores['GAD-7']['level']), (0, 'minimal'))
+        self.assertEqual(scores['PHQ-9']['max'], 27)
+
+    def test_severe_levels(self):
+        from core.utils import scale_scores
+        scores = {s['scale']: s for s in scale_scores(self._answers(4, 3, 3))}
+        self.assertEqual(scores['GAD-7']['level'], 'severe')
+        self.assertEqual(scores['PHQ-9']['level'], 'severe')
+
+    def test_answer_groups_cover_all_26(self):
+        from core.utils import answer_groups
+        groups = answer_groups(self._answers(1, 1, 1))
+        self.assertEqual([len(g['items']) for g in groups], [10, 7, 9])
+        self.assertTrue(groups[2]['items'][-1]['flagged'])
+        self.assertFalse(any(i['flagged'] for i in answer_groups(self._answers(1, 1, 0))[2]['items']))

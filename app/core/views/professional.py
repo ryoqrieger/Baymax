@@ -1,15 +1,27 @@
 """Professional portal views (Sprint 4)."""
-from django.shortcuts import render
+from datetime import datetime, timedelta
+
+from django.contrib import messages
+from django.http import Http404
+from django.shortcuts import redirect, render
+from django.views.decorators.http import require_POST
 
 from core.components import (
+    APPOINTMENT_MAX_DAYS_AHEAD,
+    APPOINTMENT_SLOT_MINUTES,
     APPOINTMENT_STATUS_BADGES,
     APPOINTMENT_TABS,
     DEFAULT_APPOINTMENT_TAB,
+    DATETIME_INPUT_FORMAT,
     PAGE_SIZE,
+    QUESTION_COLS,
     ROLE_PROFESSIONAL,
+    STATUS_CONTENT,
 )
 from core.db import connect_db, get_current_semester
-from core.utils import get_page_range, parse_page, safe_reverse, total_pages_for
+from core.utils import (
+    answer_groups, get_page_range, parse_page, safe_reverse, scale_scores, total_pages_for,
+)
 from core.views.auth import login_required_role
 
 # One appointment row with its student. A student's classification is only
@@ -69,8 +81,8 @@ def dashboard(request):
 
             cur.execute(
                 _ROW_SELECT + "WHERE a.professional_id = %s AND a.status = 'accepted' "
-                              "AND a.scheduled_at >= NOW() ORDER BY a.scheduled_at LIMIT 5",
-                (semester, pro_id),
+                              "AND a.scheduled_at >= %s ORDER BY a.scheduled_at LIMIT 5",
+                (semester, pro_id, datetime.now()),
             )
             upcoming = _decorate(cur.fetchall())
     finally:
@@ -138,3 +150,173 @@ def appointments(request):
         'page_numbers': get_page_range(page, total_pages),
         'page_query': f'tab={tab}',
     })
+
+
+# ════════════════════════════════════════════════════════════════════
+#  STUDENT DETAIL + ACTIONS
+# ════════════════════════════════════════════════════════════════════
+
+def _fetch_own_appointment(cur, appointment_id, pro_id):
+    """The appointment with its student, or None if it is not this professional's."""
+    cur.execute(
+        "SELECT a.id, a.status, a.is_new, a.created_at, a.scheduled_at, a.student_id, "
+        "       u.full_name AS student_name, s.department, s.student_id AS student_code "
+        "FROM appointments a "
+        "JOIN users u ON u.id = a.student_id "
+        "JOIN students s ON s.user_id = a.student_id "
+        "WHERE a.id = %s AND a.professional_id = %s",
+        (appointment_id, pro_id),
+    )
+    return cur.fetchone()
+
+
+@login_required_role(ROLE_PROFESSIONAL)
+def appointment_detail(request, appointment_id):
+    pro_id = request.session['user_id']
+    answer_columns = ', '.join(QUESTION_COLS)      # constant column names, never user input
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            appointment = _fetch_own_appointment(cur, appointment_id, pro_id)
+            if appointment is None:
+                raise Http404('Appointment not found')
+
+            # Opening a pending request marks it as seen.
+            if appointment['status'] == 'pending' and appointment['is_new']:
+                cur.execute(
+                    "UPDATE appointments SET is_new = FALSE WHERE id = %s AND professional_id = %s",
+                    (appointment_id, pro_id),
+                )
+                conn.commit()
+                appointment['is_new'] = False
+
+            result = None
+            if appointment['status'] in ('pending', 'accepted'):      # answers are visible only while open
+                semester = get_current_semester(cur)
+                cur.execute(
+                    f"SELECT final_status, status_description, submitted_at, {answer_columns} "
+                    "FROM questionnaire_responses WHERE student_id = %s AND semester = %s",
+                    (appointment['student_id'], semester),
+                )
+                result = cur.fetchone()
+    finally:
+        conn.close()
+
+    appointment['status_label'], appointment['status_badge'] = APPOINTMENT_STATUS_BADGES[appointment['status']]
+    context = {'appointment': appointment, 'result': None}
+    if result:
+        answers = {column: result[column] for column in QUESTION_COLS}
+        content = STATUS_CONTENT.get(result['final_status'], {})
+        context.update({
+            'result': result,
+            'description': result['status_description'] or content.get('summary', ''),
+            'is_ai_description': bool(result['status_description']),
+            'scores': scale_scores(answers),
+            'groups': answer_groups(answers),
+        })
+    context.update({
+        'now_input': datetime.now().strftime(DATETIME_INPUT_FORMAT),
+        'slot_minutes': APPOINTMENT_SLOT_MINUTES,
+        'list_url': safe_reverse('professional_appointments'),
+    })
+    return render(request, 'professional/appointment_detail.html', context)
+
+
+def _back_to(appointment_id):
+    return redirect('professional_appointment', appointment_id=appointment_id)
+
+
+def _parse_future_time(raw):
+    """The submitted time as a datetime, or (None, reason) when it can't be used."""
+    try:
+        when = datetime.strptime((raw or '').strip(), DATETIME_INPUT_FORMAT)
+    except ValueError:
+        return None, 'Please choose a date and time for the appointment.'
+    now = datetime.now()
+    if when <= now:
+        return None, 'The appointment time must be in the future.'
+    if when > now + timedelta(days=APPOINTMENT_MAX_DAYS_AHEAD):
+        return None, 'That date is too far ahead. Please pick a closer one.'
+    return when, None
+
+
+@login_required_role(ROLE_PROFESSIONAL)
+@require_POST
+def appointment_accept(request, appointment_id):
+    pro_id = request.session['user_id']
+    when, problem = _parse_future_time(request.POST.get('scheduled_at'))
+    if problem:
+        messages.error(request, problem)
+        return _back_to(appointment_id)
+
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            appointment = _fetch_own_appointment(cur, appointment_id, pro_id)
+            if appointment is None:
+                raise Http404('Appointment not found')
+            if appointment['status'] != 'pending':
+                messages.error(request, 'This request has already been answered.')
+                return _back_to(appointment_id)
+
+            # One accept at a time per professional, so two clicks cannot both pass the clash check.
+            cur.execute("SELECT pg_advisory_xact_lock(%s)", (pro_id,))
+            cur.execute(
+                "UPDATE appointments SET status = 'accepted', scheduled_at = %s, is_new = FALSE "
+                "WHERE id = %s AND professional_id = %s AND status = 'pending' "
+                "AND NOT EXISTS ("
+                "  SELECT 1 FROM appointments o "
+                "  WHERE o.professional_id = %s AND o.status = 'accepted' AND o.id <> %s "
+                "    AND o.scheduled_at > %s - make_interval(mins => %s) "
+                "    AND o.scheduled_at < %s + make_interval(mins => %s)"
+                ") RETURNING id",
+                (when, appointment_id, pro_id, pro_id, appointment_id,
+                 when, APPOINTMENT_SLOT_MINUTES, when, APPOINTMENT_SLOT_MINUTES),
+            )
+            done = cur.fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+
+    if done:
+        messages.success(request, f"Accepted. {appointment['student_name']} is booked for {when:%a %d %b, %I:%M %p}.")
+    else:
+        messages.error(request, f'You already have an appointment within {APPOINTMENT_SLOT_MINUTES} minutes of that time. Please choose another.')
+    return _back_to(appointment_id)
+
+
+def _change_status(request, appointment_id, from_status, to_status, success_text):
+    """Move an appointment from one status to the next, only if it is still in `from_status`."""
+    pro_id = request.session['user_id']
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            appointment = _fetch_own_appointment(cur, appointment_id, pro_id)
+            if appointment is None:
+                raise Http404('Appointment not found')
+            cur.execute(
+                "UPDATE appointments SET status = %s, is_new = FALSE "
+                "WHERE id = %s AND professional_id = %s AND status = %s RETURNING id",
+                (to_status, appointment_id, pro_id, from_status),
+            )
+            done = cur.fetchone()
+        conn.commit()
+    finally:
+        conn.close()
+    if done:
+        messages.success(request, success_text.format(name=appointment['student_name']))
+    else:
+        messages.error(request, 'This request has already been answered.')
+    return _back_to(appointment_id)
+
+
+@login_required_role(ROLE_PROFESSIONAL)
+@require_POST
+def appointment_decline(request, appointment_id):
+    return _change_status(request, appointment_id, 'pending', 'declined', 'Request from {name} declined.')
+
+
+@login_required_role(ROLE_PROFESSIONAL)
+@require_POST
+def appointment_release(request, appointment_id):
+    return _change_status(request, appointment_id, 'accepted', 'completed', '{name} has been released and moved to Completed.')

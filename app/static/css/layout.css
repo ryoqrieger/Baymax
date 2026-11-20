@@ -120,6 +120,7 @@
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-md); }
 .grid-sidebar { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-md); }
 .items-start-grid { align-items: start; }
+.stack-sm { display: flex; flex-direction: column; gap: var(--space-sm); }
 
 /* ── Flex utilities ── */
 .flex { display: flex; }

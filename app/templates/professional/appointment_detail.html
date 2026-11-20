@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ appointment.student_name }} — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">🧑‍🎓 {{ appointment.student_name }}</h1>
+      <p class="body-sm">{{ appointment.department }} · {{ appointment.student_code }}</p>
+    </div>
+    {% if list_url %}<a class="btn btn-ghost btn-sm" href="{{ list_url }}">← Back to Appointments</a>{% endif %}
+  </div>
+
+  <div class="grid-2 items-start-grid">
+    <div class="card card-static accent-top-lavender">
+      <div class="label mb-sm">Request</div>
+      <div class="btn-row">
+        <span class="badge badge-lg {{ appointment.status_badge }}">{{ appointment.status_label }}</span>
+        {% if result %}<span class="badge badge-lg badge-{{ result.final_status|lower }}">{{ result.final_status }}</span>{% endif %}
+      </div>
+      <p class="body-sm mt-sm">Requested {{ appointment.created_at|date:"D j M Y, g:i A" }}.</p>
+      {% if appointment.scheduled_at %}<p class="body-lg mt-sm">📅 {{ appointment.scheduled_at|date:"D j M Y, g:i A" }}</p>{% endif %}
+      {% if appointment.status == 'declined' %}<p class="body-sm mt-sm">You declined this request. The student’s answers are no longer shown.</p>{% endif %}
+      {% if appointment.status == 'completed' %}<p class="body-sm mt-sm">You released this student. Their answers are no longer shown.</p>{% endif %}
+    </div>
+
+    {% if appointment.status == 'pending' %}
+    <div class="card card-static">
+      <div class="label mb-sm">Reply to this request</div>
+      <form class="form" method="post" action="{% url 'professional_appointment_accept' appointment_id=appointment.id %}">
+        {% csrf_token %}
+        <div class="field">
+          <label class="form-label" for="scheduled_at">Appointment date and time</label>
+          <input class="input" id="scheduled_at" name="scheduled_at" type="datetime-local" min="{{ now_input }}" required>
+          <span class="form-hint">Must be in the future and at least {{ slot_minutes }} minutes away from your other appointments.</span>
+        </div>
+        <button class="btn btn-accent btn-sm" type="submit">Accept request</button>
+      </form>
+      <form class="mt-sm" method="post" action="{% url 'professional_appointment_decline' appointment_id=appointment.id %}">
+        {% csrf_token %}
+        <button class="btn btn-ghost btn-outlined btn-sm" type="submit">Decline request</button>
+      </form>
+    </div>
+    {% elif appointment.status == 'accepted' %}
+    <div class="card card-static">
+      <div class="label mb-sm">Finished with this student?</div>
+      <p class="body-sm">Releasing ends your care for now and moves the appointment to Completed. Their answers will no longer be visible to you.</p>
+      <form class="mt-sm" method="post" action="{% url 'professional_appointment_release' appointment_id=appointment.id %}">
+        {% csrf_token %}
+        <button class="btn btn-ghost btn-outlined btn-sm" type="submit">Release student</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if appointment.status == 'pending' or appointment.status == 'accepted' %}
+    {% if result %}
+    <div class="section">
+      <div class="card card-static bg-lavender-soft">
+        <div class="insight-head">
+          <span aria-hidden="true">✨</span>
+          <span class="label">{% if is_ai_description %}Baymax AI Insight{% else %}What this means{% endif %}</span>
+        </div>
+        <p class="body-lg insight-text">{{ description }}</p>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2 class="display-md section-title">Scale scores</h2>
+      <div class="grid-3">
+        {% for score in scores %}
+        <div class="card stat-card">
+          <div class="stat-label">{{ score.title }}</div>
+          <div class="stat-value">{{ score.total }} / {{ score.max }}</div>
+          <p class="stat-note">{{ score.level|capfirst }} level ({{ score.scale }})</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="section section-end">
+      <h2 class="display-md section-title">All answers</h2>
+      {% for group in groups %}
+      <div class="card card-static mb-md">
+        <div class="label mb-sm">{{ group.title }}</div>
+        <div class="stack-sm">
+          {% for item in group.items %}
+          <div class="list-row">
+            <div>
+              <div class="list-row-title">{{ item.number }}. {{ item.text }}</div>
+              <div class="list-row-sub">{{ item.answer }}{% if item.flagged %} <span class="badge badge-critical">Needs attention</span>{% endif %}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="section"><div class="card card-static"><p class="body-lg">This student has not completed this semester’s check-in yet, so there are no answers to show.</p></div></div>
+    {% endif %}
+  {% endif %}
+</div>
+{% endblock %}

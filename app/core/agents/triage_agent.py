@@ -21,13 +21,10 @@ from core.components import (
     TRIAGE_RETRY_SECONDS,
 )
 from core.db import connect_db
+from core.utils import band_word
 
 
-def _band(total: int, bands) -> str:
-    for minimum, word in bands:
-        if total >= minimum:
-            return word
-    return bands[-1][1]
+_band = band_word
 
 
 def compute_levels(answers: dict) -> dict:

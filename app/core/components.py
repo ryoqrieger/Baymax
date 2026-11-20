@@ -281,3 +281,9 @@ APPOINTMENT_STATUS_BADGES = {
     'completed': ('Completed', 'badge-lavender'),
     'declined': ('Declined', 'badge-muted'),
 }
+
+# ── Appointment actions (Sprint 4) ────────────────────────────────────
+APPOINTMENT_SLOT_MINUTES = 60          # two accepted appointments may not be closer than this
+APPOINTMENT_MAX_DAYS_AHEAD = 365       # a time further away than this is treated as a typo
+DATETIME_INPUT_FORMAT = '%Y-%m-%dT%H:%M'   # what <input type="datetime-local"> submits
+SCALE_MAX_SCORES = {'PSS-10': 40, 'GAD-7': 21, 'PHQ-9': 27}
