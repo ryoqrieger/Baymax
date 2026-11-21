@@ -9,6 +9,13 @@ from django.urls import NoReverseMatch, reverse
 from core.db import connect_db
 
 from core.components import (
+    ALERT_TYPE_LABELS,
+    DEPARTMENT_AT_RISK_PCT,
+    STATS_TOP_SYMPTOMS,
+    SYMPTOM_LABELS,
+    STATUS_CHALLENGED,
+    STATUS_CRITICAL,
+    STATUS_STABLE,
     GAD_BANDS,
     PHQ_BANDS,
     PSS_BANDS,
@@ -185,3 +192,134 @@ def answer_groups(answers: dict) -> list:
 def percent(part, whole) -> int:
     """part as a whole-number percentage of whole (0 when whole is 0)."""
     return round(part * 100 / whole) if whole else 0
+
+
+# ── Semester statistics (shared by the professional and authority portals) ───
+
+def _symptom_thresholds() -> dict:
+    """column -> the lowest answer that counts as "halfway up the scale" (e.g. 2 on a 0-4 or 0-3 scale)."""
+    thresholds = {}
+    for question in QUESTIONS:
+        column = question['column']
+        if column in SYMPTOM_LABELS:
+            top = max(question['valid_values'])
+            thresholds[column] = min(v for v in question['valid_values'] if v / top >= 0.5)
+    return thresholds
+
+
+def list_semesters(cur) -> list:
+    """Semester names that have check-ins (plus the current one), newest first."""
+    cur.execute(
+        "SELECT semester FROM semester_schedule "
+        "WHERE is_current OR semester IN (SELECT DISTINCT semester FROM questionnaire_responses) "
+        "ORDER BY start_date DESC"
+    )
+    return [row['semester'] for row in cur.fetchall()]
+
+
+def pick_semester(requested, semesters, current):
+    """The ?semester= value if it is a known semester, otherwise the current (or newest) one."""
+    if requested in semesters:
+        return requested
+    return current or (semesters[0] if semesters else None)
+
+
+def semester_overview_empty() -> dict:
+    return {'total': 0, 'split': [], 'departments': [], 'symptoms': [], 'self_harm_count': 0, 'self_harm_pct': 0}
+
+
+def semester_overview(cur, semester) -> dict:
+    """
+    Anonymous campus-wide figures for one semester, in three queries:
+    status split, per department, and every symptom at once (one aggregated query).
+    """
+    thresholds = _symptom_thresholds()
+    # Column names and thresholds are constants from components.py, never user input.
+    symptom_sql = ', '.join(f'COUNT(*) FILTER (WHERE {c} >= {t}) AS {c}' for c, t in thresholds.items())
+
+    cur.execute(
+        "SELECT COUNT(*) AS total, "
+        "  COUNT(*) FILTER (WHERE final_status = 'Stable')     AS stable, "
+        "  COUNT(*) FILTER (WHERE final_status = 'Challenged') AS challenged, "
+        "  COUNT(*) FILTER (WHERE final_status = 'Critical')   AS critical "
+        "FROM questionnaire_responses WHERE semester = %s",
+        (semester,),
+    )
+    totals = cur.fetchone()
+    total = totals['total']
+    if not total:
+        return semester_overview_empty()
+
+    cur.execute(
+        "SELECT s.department, COUNT(*) AS total, "
+        "  COUNT(*) FILTER (WHERE q.final_status = 'Stable')     AS stable, "
+        "  COUNT(*) FILTER (WHERE q.final_status = 'Challenged') AS challenged, "
+        "  COUNT(*) FILTER (WHERE q.final_status = 'Critical')   AS critical "
+        "FROM questionnaire_responses q JOIN students s ON s.user_id = q.student_id "
+        "WHERE q.semester = %s GROUP BY s.department ORDER BY s.department",
+        (semester,),
+    )
+    departments = cur.fetchall()
+    for row in departments:
+        row['at_risk_pct'] = percent(row['challenged'] + row['critical'], row['total'])
+        row['is_at_risk'] = row['at_risk_pct'] > DEPARTMENT_AT_RISK_PCT
+
+    cur.execute(
+        f"SELECT {symptom_sql}, COUNT(*) FILTER (WHERE {SELF_HARM_COLUMN} > 0) AS self_harm "
+        "FROM questionnaire_responses WHERE semester = %s",
+        (semester,),
+    )
+    counts = cur.fetchone()
+    self_harm_count = counts.pop('self_harm')
+    symptoms = sorted(
+        ({'label': SYMPTOM_LABELS[c], 'count': n, 'pct': percent(n, total)} for c, n in counts.items() if n),
+        key=lambda item: (-item['count'], item['label']),
+    )[:STATS_TOP_SYMPTOMS]
+
+    split = [
+        {'label': label, 'count': totals[key], 'pct': percent(totals[key], total), 'fill': fill, 'badge': f'badge-{key}'}
+        for key, label, fill in (('stable', STATUS_STABLE, 'fill-mint'),
+                                 ('challenged', STATUS_CHALLENGED, 'fill-peach'),
+                                 ('critical', STATUS_CRITICAL, 'fill-coral'))
+    ]
+    return {
+        'total': total,
+        'split': split,
+        'critical_pct': percent(totals['critical'], total),
+        'at_risk_pct': percent(totals['challenged'] + totals['critical'], total),
+        'departments': departments,
+        'symptoms': symptoms,
+        'self_harm_count': self_harm_count,
+        'self_harm_pct': percent(self_harm_count, total),
+    }
+
+
+def semester_alerts(cur, semester, include_dismissed=True) -> list:
+    """Stored alerts for a semester, newest first, with display icon/heading added."""
+    cur.execute(
+        "SELECT id, alert_type, message, department, dismissed, created_at FROM analytics_alerts "
+        "WHERE semester = %s" + ("" if include_dismissed else " AND dismissed = FALSE") +
+        " ORDER BY dismissed, created_at DESC, id DESC",
+        (semester,),
+    )
+    alerts = cur.fetchall()
+    for alert in alerts:
+        alert['icon'], alert['heading'] = ALERT_TYPE_LABELS.get(alert['alert_type'], ('🔔', 'Alert'))
+    return alerts
+
+
+def semester_trend(cur) -> list:
+    """One row per semester with check-ins, oldest first (one GROUP BY query, no per-semester loop)."""
+    cur.execute(
+        "SELECT q.semester, COUNT(*) AS total, "
+        "  COUNT(*) FILTER (WHERE q.final_status = 'Stable')     AS stable, "
+        "  COUNT(*) FILTER (WHERE q.final_status = 'Challenged') AS challenged, "
+        "  COUNT(*) FILTER (WHERE q.final_status = 'Critical')   AS critical "
+        "FROM questionnaire_responses q JOIN semester_schedule sc ON sc.semester = q.semester "
+        "GROUP BY q.semester, sc.start_date ORDER BY sc.start_date"
+    )
+    rows = cur.fetchall()
+    for row in rows:
+        row['critical_pct'] = percent(row['critical'], row['total'])
+        row['at_risk_pct'] = percent(row['challenged'] + row['critical'], row['total'])
+    return rows

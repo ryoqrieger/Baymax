@@ -1,0 +1,62 @@
+{# Status split, department table and top concerns. Needs: total, split, departments, symptoms, self_harm_*, at_risk_threshold. #}
+  <div class="grid-4">
+    <div class="card stat-card accent-top-lavender">
+      <div class="stat-label">Check-ins</div>
+      <div class="stat-value">{{ total }}</div>
+      <p class="stat-note">Students who finished the 26 questions.</p>
+    </div>
+    {% for item in split %}
+    <div class="card stat-card">
+      <div class="stat-label">{{ item.label }}</div>
+      <div class="stat-value">{{ item.count }} · {{ item.pct }}%</div>
+      <div class="progress-track mt-sm"><div class="progress-fill {{ item.fill }} w-pct-{{ item.pct }}"></div></div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="grid-2 section items-start-grid">
+    <div>
+      <h2 class="display-md section-title">By department</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Dept</th><th>Check-ins</th><th>Stable</th><th>Challenged</th><th>Critical</th><th>At risk</th></tr></thead>
+          <tbody>
+            {% for d in departments %}
+            <tr>
+              <td><strong>{{ d.department }}</strong></td>
+              <td>{{ d.total }}</td>
+              <td>{{ d.stable }}</td>
+              <td>{{ d.challenged }}</td>
+              <td>{{ d.critical }}</td>
+              <td class="td-nowrap">{{ d.at_risk_pct }}%{% if d.is_at_risk %} <span class="badge badge-critical">High</span>{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <p class="body-sm mt-sm">“At risk” is the share of a department that is Challenged or Critical. “High” means above {{ at_risk_threshold }}%.</p>
+    </div>
+
+    <div>
+      <h2 class="display-md section-title">Most common concerns</h2>
+      <div class="card card-static">
+        {% if symptoms %}
+        <p class="body-sm mb-md">Share of students who answered halfway up the scale or higher.</p>
+        <div class="stack-sm">
+          {% for item in symptoms %}
+          <div>
+            <div class="list-row-title">{{ item.label|capfirst }} <span class="list-row-sub">· {{ item.pct }}% ({{ item.count }})</span></div>
+            <div class="progress-track progress-thin"><div class="progress-fill fill-lavender w-pct-{{ item.pct }}"></div></div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="body-sm">No concern stands out this semester.</p>
+        {% endif %}
+        <div class="recommendation mt-md">
+          <span class="body-sm fw-semibold">💬 Self-harm question:</span>
+          <span class="body-sm">{% if self_harm_count %}{{ self_harm_count }} student{{ self_harm_count|pluralize }} ({{ self_harm_pct }}%) gave an answer above “Not at all”.{% else %}No student gave an answer above “Not at all”.{% endif %}</span>
+        </div>
+      </div>
+    </div>
+  </div>

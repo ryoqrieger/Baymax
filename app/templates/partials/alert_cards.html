@@ -1,0 +1,13 @@
+{# Alert cards. Needs: alerts. #}
+<div class="stack-sm">
+  {% for alert in alerts %}
+  <div class="card card-static alert-card alert-type-{{ alert.alert_type }}">
+    <div class="btn-row">
+      <span class="label">{{ alert.icon }} {{ alert.heading }}{% if alert.department %} · {{ alert.department }}{% endif %}</span>
+      {% if alert.dismissed %}<span class="badge badge-muted">Dismissed</span>{% endif %}
+    </div>
+    <p class="body-lg mt-sm">{{ alert.message }}</p>
+    <p class="body-sm mt-sm">{{ alert.created_at|date:"j M Y" }}</p>
+  </div>
+  {% endfor %}
+</div>

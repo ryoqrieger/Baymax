@@ -295,3 +295,7 @@ ALERT_TYPE_LABELS = {                  # stored alert type -> (icon, heading)
     'symptom_spike': ('🩺', 'Symptom spike'),
     'department_at_risk': ('🏫', 'Department at risk'),
 }
+
+# ── Authority portal (Sprint 5) ──────────────────────────────────────────────
+DASHBOARD_ALERTS_MAX = 3               # latest alerts shown on the authority dashboard
+DASHBOARD_EVENTS_MAX = 3               # next events shown on the authority dashboard

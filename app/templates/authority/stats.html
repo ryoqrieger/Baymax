@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Campus stats — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">📊 Campus stats</h1>
+      <p class="body-sm">{% if semester %}{{ semester }}{% if is_current %} (current){% endif %} · system-wide, anonymous figures{% else %}No semester has been set up yet{% endif %}</p>
+    </div>
+  </div>
+
+  {% if semesters|length > 1 %}
+  <div class="btn-row mb-md">
+    {% for s in semesters %}
+    <a class="filter-chip{% if s.active %} active{% endif %}" href="?semester={{ s.name|urlencode }}">{{ s.name }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not total %}
+  <div class="card card-static"><p class="body-lg">No check-ins have been submitted for this semester yet.</p></div>
+  {% else %}
+  {% include "partials/semester_overview.html" %}
+  {% endif %}
+
+  {% if trend %}
+  <div class="section">
+    <h2 class="display-md section-title">Semester by semester</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Semester</th><th>Check-ins</th><th>Stable</th><th>Challenged</th><th>Critical</th><th>Critical %</th><th>At risk %</th></tr></thead>
+        <tbody>
+          {% for row in trend %}
+          <tr>
+            <td><strong>{{ row.semester }}</strong></td>
+            <td>{{ row.total }}</td>
+            <td>{{ row.stable }}</td>
+            <td>{{ row.challenged }}</td>
+            <td>{{ row.critical }}</td>
+            <td>{{ row.critical_pct }}%</td>
+            <td>{{ row.at_risk_pct }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="section section-end">
+    <h2 class="display-md section-title">Alerts</h2>
+    {% if alerts %}
+      {% include "partials/alert_cards.html" %}
+    {% else %}
+    <div class="card card-static"><p class="body-lg">No alerts for this semester.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

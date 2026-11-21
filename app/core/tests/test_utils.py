@@ -66,3 +66,17 @@ class PercentTests(SimpleTestCase):
         self.assertEqual(percent(2, 3), 67)
         self.assertEqual(percent(5, 0), 0)
         self.assertEqual(percent(4, 4), 100)
+
+
+class SemesterPickerTests(SimpleTestCase):
+    def test_pick_semester(self):
+        from core.utils import pick_semester
+        known = ['Fall 2026', 'Summer 2026']
+        self.assertEqual(pick_semester('Summer 2026', known, 'Fall 2026'), 'Summer 2026')
+        self.assertEqual(pick_semester("x' OR 1=1", known, 'Fall 2026'), 'Fall 2026')
+        self.assertEqual(pick_semester(None, known, None), 'Fall 2026')
+        self.assertIsNone(pick_semester(None, [], None))
+
+    def test_empty_overview_shape(self):
+        from core.utils import semester_overview_empty
+        self.assertEqual(semester_overview_empty()['total'], 0)
