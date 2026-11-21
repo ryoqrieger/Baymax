@@ -282,13 +282,13 @@ APPOINTMENT_STATUS_BADGES = {
     'declined': ('Declined', 'badge-muted'),
 }
 
-# ── Appointment actions (Sprint 4) ────────────────────────────────────
+# ── Appointment actions (Sprint 4 Chunk 2) ────────────────────────────────────
 APPOINTMENT_SLOT_MINUTES = 60          # two accepted appointments may not be closer than this
 APPOINTMENT_MAX_DAYS_AHEAD = 365       # a time further away than this is treated as a typo
 DATETIME_INPUT_FORMAT = '%Y-%m-%dT%H:%M'   # what <input type="datetime-local"> submits
 SCALE_MAX_SCORES = {'PSS-10': 40, 'GAD-7': 21, 'PHQ-9': 27}
 
-# ── Professional stats page (Sprint 4) ───────────────────────────────
+# ── Professional stats page (Sprint 4 Chunk 3) ───────────────────────────────
 STATS_TOP_SYMPTOMS = 5                 # how many symptom areas the stats page lists
 ALERT_TYPE_LABELS = {                  # stored alert type -> (icon, heading)
     'critical_surge': ('📈', 'Critical surge'),
@@ -299,3 +299,7 @@ ALERT_TYPE_LABELS = {                  # stored alert type -> (icon, heading)
 # ── Authority portal (Sprint 5) ──────────────────────────────────────────────
 DASHBOARD_ALERTS_MAX = 3               # latest alerts shown on the authority dashboard
 DASHBOARD_EVENTS_MAX = 3               # next events shown on the authority dashboard
+
+# ── AnalyticsAgent safeguards (Sprint 5) ─────────────────────────────
+ALERT_MIN_RESPONDENTS = 5              # no campus-wide alert until at least this many students checked in
+ALERT_MIN_DEPARTMENT_RESPONDENTS = 3   # no department alert for a department smaller than this

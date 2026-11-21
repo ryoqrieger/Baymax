@@ -1,4 +1,4 @@
-{# Alert cards. Needs: alerts. #}
+{# Alert cards. Needs: alerts. Optional: can_dismiss + next_page (authority only). #}
 <div class="stack-sm">
   {% for alert in alerts %}
   <div class="card card-static alert-card alert-type-{{ alert.alert_type }}">
@@ -8,6 +8,13 @@
     </div>
     <p class="body-lg mt-sm">{{ alert.message }}</p>
     <p class="body-sm mt-sm">{{ alert.created_at|date:"j M Y" }}</p>
+    {% if can_dismiss and not alert.dismissed %}
+    <form class="mt-sm" method="post" action="{% url 'authority_alert_dismiss' alert_id=alert.id %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next_page }}">
+      <button class="btn btn-sm btn-ghost btn-outlined" type="submit">Dismiss</button>
+    </form>
+    {% endif %}
   </div>
   {% endfor %}
 </div>
