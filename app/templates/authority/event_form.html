@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}{% if event %}Edit event{% else %}New event{% endif %} — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">{% if event %}✏️ Edit event{% else %}🎉 New event{% endif %}</h1>
+      <p class="body-sm">{% if event %}{{ event.rsvp_count }} student{{ event.rsvp_count|pluralize }} going.{% else %}Students will see it on their Events page.{% endif %}</p>
+    </div>
+    {% if list_url %}<a class="btn btn-ghost btn-sm" href="{{ list_url }}">← Back to Events</a>{% endif %}
+  </div>
+
+  <div class="card card-static mw-md">
+    <form class="form" method="post" novalidate>
+      {% csrf_token %}
+      <div class="field">
+        <label class="form-label" for="title">Title</label>
+        <input class="input{% if errors.title %} is-invalid{% endif %}" id="title" name="title" type="text" maxlength="{{ title_max }}" value="{{ form.title }}" required>
+        {% if errors.title %}<span class="field-error">{{ errors.title }}</span>{% endif %}
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label class="form-label" for="date">Date</label>
+          <input class="input{% if errors.date %} is-invalid{% endif %}" id="date" name="date" type="date" min="{{ min_date }}" value="{{ form.date }}" required>
+          {% if errors.date %}<span class="field-error">{{ errors.date }}</span>{% endif %}
+        </div>
+        <div class="field">
+          <label class="form-label" for="time">Time</label>
+          <input class="input{% if errors.time %} is-invalid{% endif %}" id="time" name="time" type="time" value="{{ form.time }}" required>
+          {% if errors.time %}<span class="field-error">{{ errors.time }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="field">
+        <label class="form-label" for="venue">Venue</label>
+        <input class="input{% if errors.venue %} is-invalid{% endif %}" id="venue" name="venue" type="text" maxlength="{{ venue_max }}" value="{{ form.venue }}" required>
+        {% if errors.venue %}<span class="field-error">{{ errors.venue }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="form-label" for="description">Description <span class="form-hint">(optional)</span></label>
+        <textarea class="input{% if errors.description %} is-invalid{% endif %}" id="description" name="description" maxlength="{{ description_max }}">{{ form.description }}</textarea>
+        {% if errors.description %}<span class="field-error">{{ errors.description }}</span>{% endif %}
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-accent" type="submit">{% if event %}Save changes{% else %}Create event{% endif %}</button>
+        {% if list_url %}<a class="btn btn-ghost btn-outlined" href="{{ list_url }}">Cancel</a>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

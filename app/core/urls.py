@@ -45,6 +45,10 @@ urlpatterns = [
     path('professional/appointments/<int:appointment_id>/release/', professional.appointment_release, name='professional_appointment_release'),
     path('authority/dashboard/', authority.dashboard, name='authority_dashboard'),
     path('authority/stats/', authority.stats, name='authority_stats'),
+    path('authority/events/', authority.events, name='authority_events'),
+    path('authority/events/new/', authority.event_new, name='authority_event_new'),
+    path('authority/events/<int:event_id>/edit/', authority.event_edit, name='authority_event_edit'),
+    path('authority/events/<int:event_id>/delete/', authority.event_delete, name='authority_event_delete'),
     path('authority/alerts/<int:alert_id>/dismiss/', authority.alert_dismiss, name='authority_alert_dismiss'),
     path('admin/dashboard/', admin.dashboard, name='admin_dashboard'),
 ]

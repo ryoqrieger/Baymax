@@ -303,3 +303,10 @@ DASHBOARD_EVENTS_MAX = 3               # next events shown on the authority dash
 # ── AnalyticsAgent safeguards (Sprint 5) ─────────────────────────────
 ALERT_MIN_RESPONDENTS = 5              # no campus-wide alert until at least this many students checked in
 ALERT_MIN_DEPARTMENT_RESPONDENTS = 3   # no department alert for a department smaller than this
+
+# ── Events management (Sprint 5) ─────────────────────────────────────
+EVENT_TITLE_MAX = 200
+EVENT_VENUE_MAX = 200
+EVENT_DESCRIPTION_MAX = 1000
+EVENT_DATE_FORMAT = '%Y-%m-%d'         # what <input type="date"> submits
+EVENT_TIME_FORMAT = '%H:%M'            # what <input type="time"> submits
