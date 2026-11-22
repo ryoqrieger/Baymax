@@ -1,21 +1,54 @@
 {% extends "base.html" %}
-{% block title %}Admin dashboard — Baymax{% endblock %}
+{% block title %}Dashboard — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
 
 {% block content %}
 <div class="container">
   <div class="page-header">
     <div>
-      <h1 class="display-lg">⚙️ Welcome, {{ user_name }}</h1>
-      <p class="body-sm">{{ role_label }}</p>
+      <h1 class="display-lg">🛠️ Welcome, {{ user_name }}</h1>
+      <p class="body-sm">System overview · {{ users_total }} accounts</p>
     </div>
-    <span class="badge badge-lavender">Signed in</span>
+    {% if users_url %}<a class="btn btn-ghost btn-sm" href="{{ users_url }}">Manage users →</a>{% endif %}
   </div>
 
-  <div class="card card-static accent-top-coral mw-sm">
-    <div class="label mb-sm">Coming soon</div>
-    <p class="body-lg">User management and semester tools will appear here. This page is a placeholder and will be built in Sprint 6.</p>
-    <div class="btn-row mt-md">
-      <a class="btn btn-sm btn-ghost btn-outlined" href="{{ password_url }}">Change password</a>
+  <div class="grid-3">
+    <div class="card stat-card accent-top-lavender">
+      <div class="stat-label">Active semester</div>
+      {% if semester %}
+        <div class="stat-value">{{ semester }}</div>
+        <p class="stat-note">{{ semester_dates.start_date|date:"j M Y" }} – {{ semester_dates.end_date|date:"j M Y" }}</p>
+      {% else %}
+        <div class="stat-value">None</div>
+        <p class="stat-note">No semester is marked as current.</p>
+      {% endif %}
+      {% if semester_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ semester_url }}">Semester transition →</a>{% endif %}
+    </div>
+    <div class="card stat-card accent-top-peach">
+      <div class="stat-label">Open appointments</div>
+      <div class="stat-value">{{ appointments.pending|add:appointments.accepted }}</div>
+      <p class="stat-note">{{ appointments.pending }} pending · {{ appointments.accepted }} accepted</p>
+      {% if appointments_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ appointments_url }}">View appointments →</a>{% endif %}
+    </div>
+    <div class="card stat-card accent-top-mint">
+      <div class="stat-label">Upcoming events</div>
+      <div class="stat-value">{{ events_total }}</div>
+      <p class="stat-note">Created by authority users.</p>
+      {% if events_url %}<a class="btn btn-sm btn-ghost btn-block stat-action" href="{{ events_url }}">View events →</a>{% endif %}
+    </div>
+  </div>
+
+  <div class="section section-end">
+    <h2 class="display-md section-title">Accounts by role</h2>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Role</th><th>Active</th><th>Deactivated</th></tr></thead>
+        <tbody>
+          {% for r in roles %}
+          <tr><td><strong>{{ r.label }}</strong></td><td>{{ r.active }}</td><td>{{ r.inactive }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
 </div>

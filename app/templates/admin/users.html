@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Users — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">👥 Users</h1>
+      <p class="body-sm">Search, filter and manage every account.</p>
+    </div>
+  </div>
+
+  <form class="search-bar mb-md" method="get">
+    <input type="hidden" name="role" value="{{ role }}">
+    <input class="input" type="search" name="q" value="{{ search }}" maxlength="{{ search_max }}" placeholder="Search by name or email" aria-label="Search users">
+    <button class="btn btn-primary btn-sm" type="submit">Search</button>
+    {% if search %}<a class="btn btn-ghost btn-outlined btn-sm" href="?role={{ role }}">Clear</a>{% endif %}
+  </form>
+
+  <div class="btn-row mb-md">
+    {% for chip in chips %}
+    <a class="filter-chip{% if chip.active %} active{% endif %}" href="?role={{ chip.key }}{% if search %}&amp;q={{ search|urlencode }}{% endif %}">{{ chip.label }} ({{ chip.count }})</a>
+    {% endfor %}
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Joined</th><th class="td-right">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in rows %}
+        <tr>
+          <td>
+            <strong>{{ u.full_name }}</strong>{% if u.is_me %} <span class="badge badge-xs badge-lavender">You</span>{% endif %}
+            {% if u.detail %}<div class="list-row-sub">{{ u.detail }}{% if u.student_code %} · {{ u.student_code }}{% endif %}</div>{% endif %}
+          </td>
+          <td>{{ u.email }}</td>
+          <td><span class="badge badge-lavender">{{ u.role_label }}</span></td>
+          <td>{% if u.is_active %}<span class="badge badge-active">Active</span>{% else %}<span class="badge badge-muted">Deactivated</span>{% endif %}</td>
+          <td class="td-nowrap">{{ u.created_at|date:"j M Y" }}</td>
+          <td class="td-right">
+            {% if not u.is_me %}
+            <form method="post" action="{% if u.is_active %}{% url 'admin_user_deactivate' user_id=u.id %}{% else %}{% url 'admin_user_reactivate' user_id=u.id %}{% endif %}">
+              {% csrf_token %}
+              <input type="hidden" name="return_query" value="{{ page_query }}&amp;page={{ page }}">
+              {% if u.is_active %}<button class="btn btn-sm btn-coral" type="submit">Deactivate</button>
+              {% else %}<button class="btn btn-sm btn-ghost btn-outlined" type="submit">Reactivate</button>{% endif %}
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="table-empty">No users match.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

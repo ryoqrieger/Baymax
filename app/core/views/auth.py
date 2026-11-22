@@ -49,6 +49,20 @@ from core.utils import mask_email, safe_reverse
 #  DECORATORS
 # ════════════════════════════════════════════════════════════════════
 
+def _account_is_active(user_id) -> bool:
+    """True while the account exists and has not been deactivated by Admin IT."""
+    if not user_id:
+        return False
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT is_active FROM users WHERE id = %s", (user_id,))
+            row = cur.fetchone()
+            return bool(row and row['is_active'])
+    finally:
+        conn.close()
+
+
 def login_required_role(*roles):
     """Restrict a view to one or more user roles."""
     def decorator(view_func):
@@ -56,7 +70,12 @@ def login_required_role(*roles):
         def wrapper(request, *args, **kwargs):
             current = request.session.get('role')
             if current in roles:
-                return view_func(request, *args, **kwargs)
+                if _account_is_active(request.session.get('user_id')):
+                    return view_func(request, *args, **kwargs)
+                # Deactivated (or removed) since signing in: end the session now.
+                request.session.flush()
+                messages.error(request, 'This account has been deactivated. Please contact Admin IT.')
+                return redirect(ROLE_LOGIN[current])
             if current in ROLE_DASHBOARD:
                 # Signed in, but this page belongs to another role.
                 messages.error(request, "You don't have access to that page.")

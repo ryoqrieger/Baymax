@@ -51,4 +51,7 @@ urlpatterns = [
     path('authority/events/<int:event_id>/delete/', authority.event_delete, name='authority_event_delete'),
     path('authority/alerts/<int:alert_id>/dismiss/', authority.alert_dismiss, name='authority_alert_dismiss'),
     path('admin/dashboard/', admin.dashboard, name='admin_dashboard'),
+    path('admin/users/', admin.users, name='admin_users'),
+    path('admin/users/<int:user_id>/deactivate/', admin.user_deactivate, name='admin_user_deactivate'),
+    path('admin/users/<int:user_id>/reactivate/', admin.user_reactivate, name='admin_user_reactivate'),
 ]

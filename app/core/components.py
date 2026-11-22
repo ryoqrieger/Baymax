@@ -310,3 +310,7 @@ EVENT_VENUE_MAX = 200
 EVENT_DESCRIPTION_MAX = 1000
 EVENT_DATE_FORMAT = '%Y-%m-%d'         # what <input type="date"> submits
 EVENT_TIME_FORMAT = '%H:%M'            # what <input type="time"> submits
+
+# ── Admin IT portal (Sprint 6) ───────────────────────────────────────────────
+USER_SEARCH_MAX = 100                  # longest search text accepted
+ADMIN_ACCOUNT_LOCK_ID = 7001           # serialises deactivations so the last Admin IT can never be removed
