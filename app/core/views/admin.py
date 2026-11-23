@@ -24,6 +24,7 @@ from core.components import (
     USER_SEARCH_MAX,
 )
 from core.db import connect_db, get_current_semester
+from core.agents.reset_agent import ResetAgent, TransitionError
 from core.email_utils import EmailSendError, send_password_set_email
 from core.utils import (
     get_page_range, make_password_link_token, parse_page, safe_reverse, total_pages_for,
@@ -428,4 +429,73 @@ def events(request):
         'total_rows': total_rows,
         'page_numbers': get_page_range(page, total_pages),
         'page_query': '',
+    })
+
+
+# ════════════════════════════════════════════════════════════════════
+#  SEMESTER TRANSITION
+# ════════════════════════════════════════════════════════════════════
+
+@login_required_role(ROLE_ADMIN)
+def semester(request):
+    if request.method == 'POST':
+        target = (request.POST.get('target') or '').strip()
+        from_semester = (request.POST.get('from_semester') or '').strip() or None
+        if (request.POST.get('confirm') or '').strip() != target or not target:
+            messages.error(request, 'To confirm, type the name of the target semester exactly as shown.')
+            return redirect('admin_semester')
+        try:
+            result = ResetAgent().run(target, from_semester)
+        except TransitionError as exc:
+            messages.error(request, str(exc))
+            return redirect('admin_semester')
+        wording = 'an AI-written summary' if result['from_ai'] else 'the built-in summary (the AI was not available)'
+        closing = (f"{result['closed_semester']} was archived with {wording}. "
+                   f"{result['declined']} pending request(s) were declined and {result['completed']} accepted appointment(s) completed. "
+                   if result['closed_semester'] else '')
+        messages.success(request, f"{closing}{result['target']} is now the active semester.")
+        return redirect('admin_semester')
+
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            current = get_current_semester(cur)
+            cur.execute("SELECT start_date, end_date FROM semester_schedule WHERE semester = %s", (current,))
+            dates = cur.fetchone()
+
+            checkins = 0
+            if current:
+                cur.execute("SELECT COUNT(*) AS n FROM questionnaire_responses WHERE semester = %s", (current,))
+                checkins = cur.fetchone()['n']
+            cur.execute(
+                "SELECT COUNT(*) FILTER (WHERE status = 'pending')  AS pending, "
+                "       COUNT(*) FILTER (WHERE status = 'accepted') AS accepted FROM appointments"
+            )
+            open_appointments = cur.fetchone()
+
+            cur.execute(
+                "SELECT semester, start_date, end_date FROM semester_schedule "
+                "WHERE start_date > COALESCE((SELECT start_date FROM semester_schedule WHERE semester = %s), DATE '-infinity') "
+                "ORDER BY start_date",
+                (current,),
+            )
+            targets = cur.fetchall()
+
+            cur.execute(
+                "SELECT st.semester, st.total, st.stable, st.challenged, st.critical, st.at_risk_pct, "
+                "       st.llm_summary, st.compiled_at "
+                "FROM semester_stats st JOIN semester_schedule sc ON sc.semester = st.semester "
+                "ORDER BY sc.start_date DESC"
+            )
+            archived = cur.fetchall()
+    finally:
+        conn.close()
+
+    return render(request, 'admin/semester.html', {
+        'current': current,
+        'dates': dates,
+        'checkins': checkins,
+        'open_appointments': open_appointments,
+        'targets': targets,
+        'archived': archived,
     })

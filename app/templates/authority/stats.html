@@ -18,6 +18,13 @@
   </div>
   {% endif %}
 
+  {% if summary and summary.llm_summary %}
+  <div class="card card-static bg-lavender-soft mb-md">
+    <div class="insight-head"><span aria-hidden="true">🗂️</span><span class="label">End-of-semester summary · archived {{ summary.compiled_at|date:"j M Y" }}</span></div>
+    <p class="body-lg insight-text">{{ summary.llm_summary }}</p>
+  </div>
+  {% endif %}
+
   {% if not total %}
   <div class="card card-static"><p class="body-lg">No check-ins have been submitted for this semester yet.</p></div>
   {% else %}

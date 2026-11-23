@@ -83,6 +83,10 @@ def stats(request):
                 _generate_alerts(request, semester, overview)
             alerts = semester_alerts(cur, semester) if semester else []
             trend = semester_trend(cur)
+            summary = None
+            if semester:
+                cur.execute("SELECT llm_summary, compiled_at FROM semester_stats WHERE semester = %s", (semester,))
+                summary = cur.fetchone()
     finally:
         conn.close()
 
@@ -94,6 +98,7 @@ def stats(request):
         'can_dismiss': True,
         'next_page': 'stats',
         'trend': trend,
+        'summary': summary,
         'at_risk_threshold': DEPARTMENT_AT_RISK_PCT,
         **overview,
     })

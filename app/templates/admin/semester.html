@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Semester transition — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">🔄 Semester transition</h1>
+      <p class="body-sm">Archive the current semester and start the next one.</p>
+    </div>
+  </div>
+
+  <div class="grid-2 items-start-grid">
+    <div class="card stat-card accent-top-lavender">
+      <div class="stat-label">Active semester</div>
+      {% if current %}
+        <div class="stat-value">{{ current }}</div>
+        <p class="stat-note">{{ dates.start_date|date:"j M Y" }} – {{ dates.end_date|date:"j M Y" }}</p>
+        <p class="stat-note">{{ checkins }} check-in{{ checkins|pluralize }} · {{ open_appointments.pending }} pending and {{ open_appointments.accepted }} accepted appointment{{ open_appointments.accepted|pluralize }}</p>
+      {% else %}
+        <div class="stat-value">None</div>
+        <p class="stat-note">No semester is marked as current. Choosing one below simply activates it.</p>
+      {% endif %}
+    </div>
+
+    <div class="card card-static">
+      <div class="label mb-sm">What happens when you execute</div>
+      <ol class="body-sm">
+        {% if current %}
+        <li>{{ current }}’s figures and an AI-written summary are archived.</li>
+        <li>Pending requests are declined and accepted appointments are marked completed.</li>
+        {% endif %}
+        <li>The target semester becomes the active one.</li>
+        <li>Nothing is deleted. Students start with an empty check-in and keep their history.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2 class="display-md section-title">Move to the next semester</h2>
+    {% if targets %}
+    <div class="card card-static mw-md">
+      <form class="form" method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="from_semester" value="{{ current|default:'' }}">
+        <div class="field">
+          <label class="form-label" for="target">Target semester</label>
+          <select class="input" id="target" name="target" required>
+            {% for t in targets %}<option value="{{ t.semester }}">{{ t.semester }} ({{ t.start_date|date:"j M Y" }} – {{ t.end_date|date:"j M Y" }})</option>{% endfor %}
+          </select>
+          <span class="form-hint">Only semesters that start after the current one are listed. This cannot be undone.</span>
+        </div>
+        <div class="field">
+          <label class="form-label" for="confirm">Type the target semester’s name to confirm</label>
+          <input class="input" id="confirm" name="confirm" type="text" autocomplete="off" placeholder="e.g. {{ targets.0.semester }}" required>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-coral" type="submit">Execute transition</button>
+        </div>
+      </form>
+    </div>
+    {% else %}
+    <div class="card card-static"><p class="body-lg">There is no later semester in the schedule to move to.</p></div>
+    {% endif %}
+  </div>
+
+  <div class="section section-end">
+    <h2 class="display-md section-title">Archived semesters</h2>
+    {% if archived %}
+    <div class="stack-sm">
+      {% for a in archived %}
+      <div class="card card-static">
+        <div class="btn-row">
+          <span class="label">{{ a.semester }}</span>
+          <span class="badge badge-lavender">{{ a.total }} check-in{{ a.total|pluralize }}</span>
+          <span class="badge badge-stable">{{ a.stable }} Stable</span>
+          <span class="badge badge-challenged">{{ a.challenged }} Challenged</span>
+          <span class="badge badge-critical">{{ a.critical }} Critical</span>
+        </div>
+        {% if a.llm_summary %}<p class="body-lg mt-sm">{{ a.llm_summary }}</p>{% endif %}
+        <p class="body-sm mt-sm">Archived {{ a.compiled_at|date:"j M Y" }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card card-static"><p class="body-lg">No semester has been archived yet.</p></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
