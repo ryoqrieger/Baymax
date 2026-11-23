@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Appointments — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">📅 Appointments</h1>
+      <p class="body-sm">Monitor only. Student answers and classifications are not shown here.</p>
+    </div>
+  </div>
+
+  <div class="btn-row mb-md">
+    {% for t in tabs %}
+    <a class="filter-chip{% if t.active %} active{% endif %}" href="?tab={{ t.key }}">{{ t.label }} ({{ t.count }})</a>
+    {% endfor %}
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Student</th><th>Professional</th><th>Status</th><th>Requested</th><th>Scheduled</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td><strong>{{ row.student_name }}</strong></td>
+          <td>{{ row.professional_name }}</td>
+          <td><span class="badge {{ row.status_badge }}">{{ row.status_label }}</span></td>
+          <td class="td-nowrap">{{ row.created_at|date:"j M Y" }}</td>
+          <td class="td-nowrap">{% if row.scheduled_at %}{{ row.scheduled_at|date:"D j M Y, g:i A" }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="table-empty">Nothing in this tab.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% include "partials/pagination.html" %}
+</div>
+{% endblock %}

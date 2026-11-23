@@ -2,13 +2,18 @@
 Shared helpers (architecture rule 6: all shared helpers live here).
 Sprint 4 adds get_page_range() for pagination.
 """
+import hashlib
 from datetime import date
+
+from django.core import signing
 
 from django.urls import NoReverseMatch, reverse
 
 from core.db import connect_db
 
 from core.components import (
+    PASSWORD_LINK_SALT,
+    PASSWORD_LINK_TTL_SECONDS,
     ALERT_TYPE_LABELS,
     DEPARTMENT_AT_RISK_PCT,
     STATS_TOP_SYMPTOMS,
@@ -323,3 +328,28 @@ def semester_trend(cur) -> list:
         row['critical_pct'] = percent(row['critical'], row['total'])
         row['at_risk_pct'] = percent(row['challenged'] + row['critical'], row['total'])
     return rows
+
+
+# ── Password-set links (Admin IT creates an account; the person sets their own password) ──
+
+def _password_fingerprint(stored_password: str) -> str:
+    """A short fingerprint of the current password hash. It changes when the password changes."""
+    return hashlib.sha256((stored_password or '').encode()).hexdigest()[:16]
+
+
+def make_password_link_token(user_id: int, stored_password: str) -> str:
+    """A signed token for one user. It stops working once their password changes (single use)."""
+    return signing.dumps({'uid': user_id, 'fp': _password_fingerprint(stored_password)}, salt=PASSWORD_LINK_SALT)
+
+
+def read_password_link_token(token: str):
+    """(user_id, fingerprint) from a valid, unexpired token; None for anything else."""
+    try:
+        data = signing.loads(token, salt=PASSWORD_LINK_SALT, max_age=PASSWORD_LINK_TTL_SECONDS)
+        return int(data['uid']), str(data['fp'])
+    except (signing.BadSignature, KeyError, TypeError, ValueError):
+        return None
+
+
+def password_link_matches(fingerprint: str, stored_password: str) -> bool:
+    return fingerprint == _password_fingerprint(stored_password)

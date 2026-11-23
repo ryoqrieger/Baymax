@@ -42,3 +42,14 @@ def send_otp_email(to_email: str, full_name: str, otp: str, ttl_minutes: int) ->
         'ttl_minutes': ttl_minutes,
     })
     _send(to_email, f'{otp} is your Baymax verification code', body)
+
+
+def send_password_set_email(to_email: str, full_name: str, role_label: str, link: str, ttl_days: int) -> None:
+    """Send the "set your password" link to a new account created by Admin IT."""
+    body = render_to_string('emails/set_password.txt', {
+        'full_name': full_name,
+        'role_label': role_label,
+        'link': link,
+        'ttl_days': ttl_days,
+    })
+    _send(to_email, 'Set your Baymax password', body)

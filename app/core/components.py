@@ -314,3 +314,20 @@ EVENT_TIME_FORMAT = '%H:%M'            # what <input type="time"> submits
 # ── Admin IT portal (Sprint 6) ───────────────────────────────────────────────
 USER_SEARCH_MAX = 100                  # longest search text accepted
 ADMIN_ACCOUNT_LOCK_ID = 7001           # serialises deactivations so the last Admin IT can never be removed
+
+# ── Admin IT: new accounts and password-set links (Sprint 6) ─────────
+PASSWORD_LINK_TTL_SECONDS = 3 * 24 * 60 * 60     # a password-set link works for 3 days
+PASSWORD_LINK_SALT = 'baymax.set-password'
+ADMIN_CREATABLE_ROLES = ('professional', 'authority', 'admin_it')    # students register themselves
+SPECIALIZATION_MAX = 100
+FULL_NAME_MAX = 120
+EMAIL_MAX = 254
+
+# Appointments monitor tabs: key -> (label, statuses)
+ADMIN_APPOINTMENT_TABS = {
+    'active': ('Active', ('pending', 'accepted')),
+    'completed': ('Completed', ('completed',)),
+    'declined': ('Declined', ('declined',)),
+    'all': ('All', ('pending', 'accepted', 'completed', 'declined')),
+}
+DEFAULT_ADMIN_APPOINTMENT_TAB = 'active'

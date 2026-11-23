@@ -42,7 +42,7 @@ from core.components import (
 )
 from core.db import connect_db
 from core.email_utils import EmailSendError, send_otp_email
-from core.utils import mask_email, safe_reverse
+from core.utils import mask_email, password_link_matches, read_password_link_token, safe_reverse
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -701,3 +701,64 @@ def _complete_google_registration(request, profile, form):
     start_session(request, user)  # flush() also discards the Google profile
     messages.success(request, f"Welcome to Baymax, {user['full_name']}!")
     return redirect_to_dashboard(ROLE_STUDENT)
+
+
+# ════════════════════════════════════════════════════════════════════
+#  SET PASSWORD FROM AN EMAILED LINK (accounts created by Admin IT)
+# ════════════════════════════════════════════════════════════════════
+
+def set_password(request, token):
+    """Public page: the person chooses their own password from the link they were emailed."""
+    parsed = read_password_link_token(token)
+    user = None
+    if parsed:
+        user_id, fingerprint = parsed
+        conn = connect_db()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT id, role, full_name, password, is_active FROM users WHERE id = %s", (user_id,))
+                row = cur.fetchone()
+        finally:
+            conn.close()
+        if row and row['is_active'] and password_link_matches(fingerprint, row['password']):
+            user = row
+
+    if user is None:
+        return render(request, 'auth/set_password.html', {'valid': False}, status=410)
+
+    if request.method == 'POST':
+        new = request.POST.get('new_password', '')
+        confirm = request.POST.get('confirm_password', '')
+        errors = []
+        if not new:
+            errors.append('Please enter a password.')
+        elif new != confirm:
+            errors.append('The passwords do not match.')
+        else:
+            try:
+                validate_password(new)
+            except ValidationError as exc:
+                errors.extend(exc.messages)
+
+        if errors:
+            for error in dict.fromkeys(errors):
+                messages.error(request, error)
+        else:
+            conn = connect_db()
+            try:
+                with conn.cursor() as cur:
+                    # Only if the password is still the one the link was made for (blocks a second use).
+                    cur.execute(
+                        "UPDATE users SET password = %s WHERE id = %s AND password = %s RETURNING id",
+                        (make_password(new), user['id'], user['password']),
+                    )
+                    done = cur.fetchone()
+                conn.commit()
+            finally:
+                conn.close()
+            if done:
+                messages.success(request, 'Your password is set. You can sign in now.')
+                return redirect(ROLE_LOGIN[user['role']])
+            return render(request, 'auth/set_password.html', {'valid': False}, status=410)
+
+    return render(request, 'auth/set_password.html', {'valid': True, 'full_name': user['full_name']})

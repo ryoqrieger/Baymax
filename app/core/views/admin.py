@@ -1,19 +1,33 @@
 """Admin IT portal views (Sprint 6): dashboard and user management."""
 from django.contrib import messages
+from django.contrib.auth.hashers import is_password_usable, make_password
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from core.components import (
     ADMIN_ACCOUNT_LOCK_ID,
+    ADMIN_APPOINTMENT_TABS,
+    ADMIN_CREATABLE_ROLES,
     ALL_ROLES,
+    APPOINTMENT_STATUS_BADGES,
+    DEFAULT_ADMIN_APPOINTMENT_TAB,
+    EMAIL_MAX,
+    FULL_NAME_MAX,
     PAGE_SIZE,
+    PASSWORD_LINK_TTL_SECONDS,
     ROLE_ADMIN,
     ROLE_LABELS,
+    SPECIALIZATION_MAX,
     USER_SEARCH_MAX,
 )
 from core.db import connect_db, get_current_semester
-from core.utils import get_page_range, parse_page, safe_reverse, total_pages_for
+from core.email_utils import EmailSendError, send_password_set_email
+from core.utils import (
+    get_page_range, make_password_link_token, parse_page, safe_reverse, total_pages_for,
+)
 from core.views.auth import login_required_role
 
 
@@ -98,7 +112,7 @@ def users(request):
             page = min(parse_page(request), total_pages)
 
             cur.execute(
-                "SELECT u.id, u.role, u.full_name, u.email, u.is_active, u.created_at, "
+                "SELECT u.id, u.role, u.full_name, u.email, u.password, u.is_active, u.created_at, "
                 "       s.department, s.student_id AS student_code, p.specialization "
                 "FROM users u "
                 "LEFT JOIN students s ON s.user_id = u.id "
@@ -114,6 +128,9 @@ def users(request):
         row['role_label'] = ROLE_LABELS[row['role']]
         row['is_me'] = row['id'] == request.session['user_id']
         row['detail'] = row['department'] or row['specialization'] or ''
+        # Staff accounts that were created by Admin IT and have not set a password yet.
+        row['awaiting_password'] = row['role'] != 'student' and not is_password_usable(row['password'])
+        del row['password']
 
     query_parts = [f'role={role}'] + ([f'q={_url_quote(search)}'] if search else [])
     chips = [{'key': 'all', 'label': 'All', 'count': sum(counts.values()), 'active': role == 'all'}]
@@ -125,6 +142,7 @@ def users(request):
         'role': role,
         'search': search,
         'search_max': USER_SEARCH_MAX,
+        'new_url': safe_reverse('admin_user_new'),
         'page': page,
         'total_pages': total_pages,
         'total_rows': total_rows,
@@ -199,3 +217,215 @@ def user_reactivate(request, user_id):
         raise Http404('User not found')
     messages.success(request, f"{done['full_name']} was reactivated.")
     return _back_to_users(request)
+
+
+# ════════════════════════════════════════════════════════════════════
+#  NEW STAFF ACCOUNTS: the person receives a password-set link by email
+# ════════════════════════════════════════════════════════════════════
+
+def clean_new_user_form(post) -> tuple:
+    """Validate the "new user" form. Returns (values, errors)."""
+    values = {
+        'role': (post.get('role') or '').strip(),
+        'full_name': (post.get('full_name') or '').strip(),
+        'email': (post.get('email') or '').strip().lower(),
+        'specialization': (post.get('specialization') or '').strip(),
+    }
+    errors = {}
+    if values['role'] not in ADMIN_CREATABLE_ROLES:
+        errors['role'] = 'Please choose a role.'
+    if not values['full_name']:
+        errors['full_name'] = 'Please enter a name.'
+    elif len(values['full_name']) > FULL_NAME_MAX:
+        errors['full_name'] = f'The name can be at most {FULL_NAME_MAX} characters.'
+    try:
+        if len(values['email']) > EMAIL_MAX:
+            raise ValidationError('too long')
+        validate_email(values['email'])
+    except ValidationError:
+        errors['email'] = 'Please enter a valid email address.'
+    if values['role'] == 'professional':
+        if not values['specialization']:
+            errors['specialization'] = 'Please enter the specialization.'
+        elif len(values['specialization']) > SPECIALIZATION_MAX:
+            errors['specialization'] = f'The specialization can be at most {SPECIALIZATION_MAX} characters.'
+    return values, errors
+
+
+def _password_link(request, user_id, stored_password) -> str:
+    token = make_password_link_token(user_id, stored_password)
+    return request.build_absolute_uri(safe_reverse('set_password', token=token))
+
+
+def _email_password_link(request, user) -> bool:
+    """Email the password-set link. Returns False if the mail server could not deliver it."""
+    ttl_days = PASSWORD_LINK_TTL_SECONDS // 86400
+    try:
+        send_password_set_email(
+            user['email'], user['full_name'], ROLE_LABELS[user['role']],
+            _password_link(request, user['id'], user['password']), ttl_days,
+        )
+        return True
+    except EmailSendError:
+        return False
+
+
+@login_required_role(ROLE_ADMIN)
+def user_new(request):
+    choices = [{'key': role, 'label': ROLE_LABELS[role]} for role in ADMIN_CREATABLE_ROLES]
+    values, errors = {'role': '', 'full_name': '', 'email': '', 'specialization': ''}, {}
+
+    if request.method == 'POST':
+        values, errors = clean_new_user_form(request.POST)
+        if not errors:
+            conn = connect_db()
+            try:
+                with conn.cursor() as cur:
+                    unusable = make_password(None)          # no password until the person sets one
+                    cur.execute(
+                        "INSERT INTO users (role, full_name, email, password) "
+                        "SELECT %s, %s, %s, %s WHERE NOT EXISTS (SELECT 1 FROM users WHERE LOWER(email) = %s) "
+                        "RETURNING id",
+                        (values['role'], values['full_name'], values['email'], unusable, values['email']),
+                    )
+                    created = cur.fetchone()
+                    if created and values['role'] == 'professional':
+                        cur.execute(
+                            "INSERT INTO professionals (user_id, specialization) VALUES (%s, %s)",
+                            (created['id'], values['specialization']),
+                        )
+                conn.commit()
+            finally:
+                conn.close()
+
+            if created is None:
+                errors['email'] = 'An account with this email already exists.'
+            else:
+                user = {'id': created['id'], 'email': values['email'], 'full_name': values['full_name'],
+                        'role': values['role'], 'password': unusable}
+                if _email_password_link(request, user):
+                    messages.success(request, f"Account created. A password-set link was emailed to {values['email']}.")
+                else:
+                    messages.warning(
+                        request,
+                        f"Account created, but the email to {values['email']} could not be sent. "
+                        "Use “Resend link” on the Users page once the mail settings work.",
+                    )
+                return redirect('admin_users')
+
+    return render(request, 'admin/user_form.html', {
+        'form': values,
+        'errors': errors,
+        'choices': choices,
+        'full_name_max': FULL_NAME_MAX,
+        'email_max': EMAIL_MAX,
+        'specialization_max': SPECIALIZATION_MAX,
+        'ttl_days': PASSWORD_LINK_TTL_SECONDS // 86400,
+        'list_url': safe_reverse('admin_users'),
+    })
+
+
+@login_required_role(ROLE_ADMIN)
+@require_POST
+def user_resend(request, user_id):
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, role, full_name, email, password, is_active FROM users WHERE id = %s", (user_id,))
+            user = cur.fetchone()
+    finally:
+        conn.close()
+    if user is None:
+        raise Http404('User not found')
+
+    if user['role'] == 'student' or is_password_usable(user['password']):
+        messages.info(request, f"{user['full_name']} has already set a password.")
+    elif not user['is_active']:
+        messages.error(request, 'Reactivate this account before sending a link.')
+    elif _email_password_link(request, user):
+        messages.success(request, f"A new password-set link was emailed to {user['email']}.")
+    else:
+        messages.error(request, f"The email to {user['email']} could not be sent. Check the email settings and try again.")
+    return _back_to_users(request)
+
+
+# ════════════════════════════════════════════════════════════════════
+#  MONITORS (read-only)
+# ════════════════════════════════════════════════════════════════════
+
+@login_required_role(ROLE_ADMIN)
+def appointments(request):
+    tab = request.GET.get('tab', DEFAULT_ADMIN_APPOINTMENT_TAB)
+    if tab not in ADMIN_APPOINTMENT_TABS:
+        tab = DEFAULT_ADMIN_APPOINTMENT_TAB
+    statuses = list(ADMIN_APPOINTMENT_TABS[tab][1])
+
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT COUNT(*) FILTER (WHERE status IN ('pending', 'accepted')) AS active, "
+                "       COUNT(*) FILTER (WHERE status = 'completed') AS completed, "
+                "       COUNT(*) FILTER (WHERE status = 'declined')  AS declined, "
+                "       COUNT(*) AS all_rows FROM appointments"
+            )
+            counts = cur.fetchone()
+            counts['all'] = counts.pop('all_rows')
+
+            total_rows = counts[tab]
+            total_pages = total_pages_for(total_rows)
+            page = min(parse_page(request), total_pages)
+            cur.execute(
+                "SELECT a.id, a.status, a.created_at, a.scheduled_at, "
+                "       su.full_name AS student_name, pu.full_name AS professional_name "
+                "FROM appointments a "
+                "JOIN users su ON su.id = a.student_id "
+                "JOIN users pu ON pu.id = a.professional_id "
+                "WHERE a.status = ANY(%s) "
+                "ORDER BY COALESCE(a.scheduled_at, a.created_at) DESC, a.id DESC LIMIT %s OFFSET %s",
+                (statuses, PAGE_SIZE, (page - 1) * PAGE_SIZE),
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+
+    for row in rows:
+        row['status_label'], row['status_badge'] = APPOINTMENT_STATUS_BADGES[row['status']]
+    return render(request, 'admin/appointments.html', {
+        'rows': rows,
+        'tabs': [{'key': key, 'label': label, 'count': counts[key], 'active': key == tab}
+                 for key, (label, _) in ADMIN_APPOINTMENT_TABS.items()],
+        'page': page,
+        'total_pages': total_pages,
+        'total_rows': total_rows,
+        'page_numbers': get_page_range(page, total_pages),
+        'page_query': f'tab={tab}',
+    })
+
+
+@login_required_role(ROLE_ADMIN)
+def events(request):
+    conn = connect_db()
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) AS n FROM events WHERE date >= CURRENT_DATE")
+            total_rows = cur.fetchone()['n']
+            total_pages = total_pages_for(total_rows)
+            page = min(parse_page(request), total_pages)
+            cur.execute(
+                "SELECT e.id, e.title, e.date, e.time, e.venue, e.rsvp_count, u.full_name AS creator "
+                "FROM events e LEFT JOIN users u ON u.id = e.created_by "
+                "WHERE e.date >= CURRENT_DATE ORDER BY e.date, e.time, e.id LIMIT %s OFFSET %s",
+                (PAGE_SIZE, (page - 1) * PAGE_SIZE),
+            )
+            rows = cur.fetchall()
+    finally:
+        conn.close()
+    return render(request, 'admin/events.html', {
+        'rows': rows,
+        'page': page,
+        'total_pages': total_pages,
+        'total_rows': total_rows,
+        'page_numbers': get_page_range(page, total_pages),
+        'page_query': '',
+    })

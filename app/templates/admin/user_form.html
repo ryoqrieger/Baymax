@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New staff account — Baymax{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <div>
+      <h1 class="display-lg">➕ New staff account</h1>
+      <p class="body-sm">The person gets an email with a link to set their own password. The link works once and lasts {{ ttl_days }} days.</p>
+    </div>
+    {% if list_url %}<a class="btn btn-ghost btn-sm" href="{{ list_url }}">← Back to Users</a>{% endif %}
+  </div>
+
+  <div class="card card-static mw-md">
+    <form class="form" method="post" novalidate>
+      {% csrf_token %}
+      <div class="field">
+        <label class="form-label" for="role">Role</label>
+        <select class="input{% if errors.role %} is-invalid{% endif %}" id="role" name="role" required>
+          <option value="">Choose a role…</option>
+          {% for c in choices %}<option value="{{ c.key }}"{% if form.role == c.key %} selected{% endif %}>{{ c.label }}</option>{% endfor %}
+        </select>
+        {% if errors.role %}<span class="field-error">{{ errors.role }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="form-label" for="full_name">Full name</label>
+        <input class="input{% if errors.full_name %} is-invalid{% endif %}" id="full_name" name="full_name" type="text" maxlength="{{ full_name_max }}" value="{{ form.full_name }}" required>
+        {% if errors.full_name %}<span class="field-error">{{ errors.full_name }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="form-label" for="email">Email</label>
+        <input class="input{% if errors.email %} is-invalid{% endif %}" id="email" name="email" type="email" maxlength="{{ email_max }}" value="{{ form.email }}" autocomplete="off" required>
+        {% if errors.email %}<span class="field-error">{{ errors.email }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="form-label" for="specialization">Specialization <span class="form-hint">(professionals only)</span></label>
+        <input class="input{% if errors.specialization %} is-invalid{% endif %}" id="specialization" name="specialization" type="text" maxlength="{{ specialization_max }}" value="{{ form.specialization }}" placeholder="e.g. Anxiety &amp; Stress">
+        {% if errors.specialization %}<span class="field-error">{{ errors.specialization }}</span>{% endif %}
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-accent" type="submit">Create account and send link</button>
+        {% if list_url %}<a class="btn btn-ghost btn-outlined" href="{{ list_url }}">Cancel</a>{% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

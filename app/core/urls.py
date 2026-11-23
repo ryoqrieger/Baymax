@@ -23,6 +23,7 @@ urlpatterns = [
     path('auth/google/', auth.google_start, name='google_start'),
     path('auth/google/complete/', auth.google_complete, name='google_complete'),
     path('account/password/', auth.change_password, name='change_password'),
+    path('account/set-password/<str:token>/', auth.set_password, name='set_password'),
 
     # ── Dashboards (placeholders until their sprint) ──
     path('student/dashboard/', student.dashboard, name='student_dashboard'),
@@ -52,6 +53,10 @@ urlpatterns = [
     path('authority/alerts/<int:alert_id>/dismiss/', authority.alert_dismiss, name='authority_alert_dismiss'),
     path('admin/dashboard/', admin.dashboard, name='admin_dashboard'),
     path('admin/users/', admin.users, name='admin_users'),
+    path('admin/users/new/', admin.user_new, name='admin_user_new'),
+    path('admin/users/<int:user_id>/resend/', admin.user_resend, name='admin_user_resend'),
+    path('admin/appointments/', admin.appointments, name='admin_appointments'),
+    path('admin/events/', admin.events, name='admin_events'),
     path('admin/users/<int:user_id>/deactivate/', admin.user_deactivate, name='admin_user_deactivate'),
     path('admin/users/<int:user_id>/reactivate/', admin.user_reactivate, name='admin_user_reactivate'),
 ]
