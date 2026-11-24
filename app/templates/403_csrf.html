@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}This page expired — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+
+{% block content %}
+<div class="container container-sm">
+  <div class="card card-static mw-sm text-center">
+    <div class="status-icon mx-auto mb-md" aria-hidden="true">⏰</div>
+    <h1 class="display-lg">This page expired</h1>
+    <p class="body-lg mt-sm">Your form could not be verified, usually because the page was open for a long time. Please go back, reload the page and try again.</p>
+    <div class="btn-row justify-center mt-md">
+      <a class="btn btn-accent" href="{% url 'landing' %}">Go to home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

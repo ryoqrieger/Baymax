@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Page not found — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+
+{% block content %}
+<div class="container container-sm">
+  <div class="card card-static mw-sm text-center">
+    <div class="status-icon mx-auto mb-md" aria-hidden="true">🔍</div>
+    <h1 class="display-lg">Page not found</h1>
+    <p class="body-lg mt-sm">We could not find that page. It may have moved, or the address may have a typo.</p>
+    <div class="btn-row justify-center mt-md">
+      <a class="btn btn-accent" href="{% url 'landing' %}">Go to home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Something went wrong on our side — Baymax{% endblock %}
+{% block page_class %}bg-gradient-soft{% endblock %}
+
+{% block content %}
+<div class="container container-sm">
+  <div class="card card-static mw-sm text-center">
+    <div class="status-icon mx-auto mb-md" aria-hidden="true">🛠️</div>
+    <h1 class="display-lg">Something went wrong on our side</h1>
+    <p class="body-lg mt-sm">We are sorry. The problem has been logged. Please try again in a moment.</p>
+    <div class="btn-row justify-center mt-md">
+      <a class="btn btn-accent" href="{% url 'landing' %}">Go to home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
