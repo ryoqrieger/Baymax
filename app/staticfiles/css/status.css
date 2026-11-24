@@ -1,0 +1,90 @@
+/* ═══════════════════════════════════════════════════════════
+   BAYMAX — HEALTH STATUS
+   Classification hero card, AI insight, recommendation,
+   top-symptom cards. Add a modifier to colour by result:
+   .status-stable | .status-challenged | .status-critical
+   ═══════════════════════════════════════════════════════════ */
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+.status-icon {
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--fs-3xl);
+  border: var(--border-thick);
+  border-radius: 50%;
+  box-shadow: var(--shadow-medium);
+}
+.status-title { font-size: var(--fs-2xl); }
+.status-summary { font-size: 0.95rem; text-align: center; }
+
+/* Result colours (card edge + icon fill) */
+.status-card.status-stable { border: 4px solid var(--status-stable); }
+.status-card.status-challenged { border: 4px solid var(--status-challenged); }
+.status-card.status-critical { border: 4px solid var(--status-critical); }
+.status-stable .status-icon { background: var(--status-stable); }
+.status-challenged .status-icon { background: var(--status-challenged); }
+.status-critical .status-icon { background: var(--status-critical); }
+
+/* Text colour for a status word */
+.status-text-stable { color: var(--status-stable-text); }
+.status-text-challenged { color: var(--status-challenged-text); }
+.status-text-critical { color: var(--status-critical-text); }
+
+/* ── AI insight ── */
+.insight-head { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-sm); }
+.insight-text { font-style: italic; line-height: 1.7; font-size: 0.95rem; }
+.insight-fallback { font-size: var(--fs-md); color: var(--grey-500); margin-top: var(--space-sm); }
+.recommendation {
+  margin-top: var(--space-md);
+  padding: var(--space-sm);
+  background: var(--white);
+  border: var(--border-thin);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Top symptoms ── */
+.symptom-rank { margin-bottom: var(--space-sm); }
+.symptom-name { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-xl); }
+.symptom-score { margin-top: var(--space-sm); }
+
+/* ── Answered-questions score chips ── */
+.score-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  padding: 2px 8px;
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  border: var(--border-thin);
+  border-radius: var(--radius-pill);
+}
+.score-0 { background: var(--grey-100); }
+.score-1 { background: var(--mint-light); }
+.score-2 { background: var(--mint); }
+.score-3 { background: var(--peach); }
+.score-4 { background: var(--coral); color: var(--white); }
+
+/* ── Help page ── */
+.emergency {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md);
+  background: var(--coral-light);
+  border: var(--border-thick);
+  border-left: 6px solid var(--coral);
+  border-radius: var(--radius-md);
+}
+.contact-card { display: flex; flex-direction: column; gap: var(--space-xs); }
